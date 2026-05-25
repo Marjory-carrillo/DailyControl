@@ -1,0 +1,194 @@
+export function printTicket(order, config = {}) {
+  const businessName = config?.businessName || 'Mi Negocio';
+  const slogan = config?.slogan || '';
+  const phone = config?.phone || '';
+
+  const renderItems = () => order.items.map(i => `
+    <div class="row">
+      <span>${i.quantity}x ${i.name}${i.persona ? ` <em style="color:#888;">(${i.persona})</em>` : ''}</span>
+      <span>$${(i.price * i.quantity).toFixed(2)}</span>
+    </div>
+  `).join('');
+
+  // Group items by persona for persona summary
+  const renderPersonaSummary = () => {
+    const personas = {};
+    order.items.forEach(i => {
+      const p = i.persona || 'General';
+      if (!personas[p]) personas[p] = { items: [], total: 0 };
+      personas[p].items.push(i);
+      personas[p].total += i.price * i.quantity;
+    });
+    const keys = Object.keys(personas);
+    if (keys.length <= 1 && keys[0] === 'General') return '';
+    
+    let html = `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #000;">
+      <strong style="display:block; margin-bottom:6px; font-size:12px;">DESGLOSE POR PERSONA:</strong>`;
+    keys.forEach(k => {
+      html += `<div class="row" style="font-size:12px; margin-left:8px;">
+        <span>${k}</span><span>$${personas[k].total.toFixed(2)}</span>
+      </div>`;
+    });
+    html += '</div>';
+    return html;
+  };
+
+  const renderTotals = () => {
+    let html = '';
+    if (order.discount > 0) {
+      html += `
+        <div class="row" style="font-weight:normal; font-size:12px; margin-top:8px;">
+          <span>Subtotal:</span>
+          <span>$${order.subtotal?.toFixed(2) || (order.total + order.discount).toFixed(2)}</span>
+        </div>
+        <div class="row" style="font-weight:normal; font-size:12px; color:#555;">
+          <span>Descuento:</span>
+          <span>-$${order.discount.toFixed(2)}</span>
+        </div>
+      `;
+    }
+    
+    html += `
+      <div class="total" style="margin-top:8px;">TOTAL: $${order.total.toFixed(2)}</div>
+      <div class="row" style="font-size:11px; color:#666; justify-content:flex-end;">
+        <span>Pago: ${order.paymentMethod || 'Efectivo'}</span>
+      </div>
+    `;
+    
+    return html;
+  };
+
+  const renderNote = () => order.note ? `
+    <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #000;">
+      <strong>Nota:</strong> ${order.note}
+    </div>
+  ` : '';
+
+  const renderDelivery = () => {
+    if (!order.delivery) return '';
+    const { calle, numero, colonia, phone } = order.delivery;
+    const addressLine = `${calle} ${numero ? '#' + numero : ''}`.trim();
+    
+    return `
+    <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #000; font-size:12px;">
+      <strong style="display:block; margin-bottom:4px; font-size:14px;">🛵 ENTREGA A DOMICILIO</strong>
+      <strong>Colonia:</strong> ${colonia}<br/>
+      <strong>Calle:</strong> ${addressLine}
+      ${phone ? `<br/><strong>Tel:</strong> ${phone}` : ''}
+    </div>
+    </div>
+  `;
+  };
+
+  const renderTable = () => {
+    if (order.table && !order.delivery) {
+      return `
+      <div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #000; font-size:14px; text-align:center;">
+        <strong>🪑 ${order.table}</strong>
+      </div>
+      `;
+    }
+    return '';
+  };
+
+  const renderMesero = () => order.mesero ? `
+    <div style="text-align:center; font-size:11px; margin-top:2px; margin-bottom:6px;">
+      <strong>Atiende:</strong> ${order.mesero}
+    </div>
+  ` : '';
+
+  const clienteCopy = `
+    <div class="ticket">
+      <div class="header">
+        <strong>${businessName.toUpperCase()}</strong>
+        ${slogan ? `<br/><span>${slogan}</span>` : ''}
+        ${phone ? `<br/><span>Tel: ${phone}</span>` : ''}
+        <br/><span style="margin-top:6px; display:inline-block;">Orden #${order.id} — ${order.time}</span>
+      </div>
+      ${renderDelivery()}
+      ${renderTable()}
+      ${renderMesero()}
+      <div class="items">
+        ${renderItems()}
+      </div>
+      ${renderTotals()}
+      ${renderPersonaSummary()}
+      ${renderNote()}
+      <p class="thanks" style="margin-top:10px;">¡Gracias por su preferencia!</p>
+    </div>
+  `;
+
+  const negocioCopy = `
+    <div class="ticket">
+      <div class="header" style="font-weight:bold;">
+        Orden #${order.id} &nbsp;|&nbsp; ${order.time}
+      </div>
+      ${renderDelivery()}
+      ${renderTable()}
+      ${renderMesero()}
+      <div class="items">
+        ${renderItems()}
+      </div>
+      ${renderTotals()}
+      ${renderPersonaSummary()}
+      ${renderNote()}
+    </div>
+  `;
+
+  const ticketHTML = `
+    <html>
+      <head>
+        <title>Ticket Orden #${order.id}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: monospace; font-size: 13px; color: #000; width: 300px; margin: 0 auto; }
+          .ticket { padding: 12px 0; }
+          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; line-height: 1.6; margin-bottom: 10px; }
+          .items { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid #ddd; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+          .total { text-align: right; font-weight: bold; font-size: 15px; }
+          .thanks { text-align: center; font-size: 11px; }
+          .cut-line { border: none; border-top: 2px dashed #aaa; margin: 15px 0; position: relative; text-align: center; }
+          .cut-line::after { content: '✂  CORTAR AQUÍ  ✂'; font-size: 10px; color: #aaa; position: absolute; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 0 6px; }
+        </style>
+      </head>
+      <body>
+        ${clienteCopy}
+        <div class="cut-line"></div>
+        ${negocioCopy}
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+    </html>
+  `;
+
+  // On mobile, window.open() often fails or shows blank pages.
+  // Use an iframe approach instead for more reliable cross-device printing.
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+  if (isMobile) {
+    // On mobile: create a hidden iframe to print from
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:320px; height:800px;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(ticketHTML.replace('window.print();', ''));
+    doc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.print();
+      } catch {
+        // Fallback: just show the ticket
+        window.open('').document.write(ticketHTML);
+      }
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 500);
+  } else {
+    // Desktop: classic window.open approach
+    const printWindow = window.open('', '_blank', 'width=320,height=800');
+    if (printWindow) {
+      printWindow.document.write(ticketHTML);
+      printWindow.document.close();
+    }
+  }
+}

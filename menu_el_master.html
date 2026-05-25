@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Menú - Taquería El Master</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Poppins:wght@400;600;700;800&family=Dancing+Script:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .menu {
+    width: 900px; background: #FFFAF5;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    border: 2px solid #222;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: #1a1a1a;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 20px 24px;
+    border-bottom: 3px solid #E67E22;
+  }
+  .header img { height: 90px; }
+  .header-text { text-align: center; }
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 900; letter-spacing: 3px;
+    color: #E67E22; line-height: 1.1;
+  }
+  .header .slogan {
+    font-family: 'Dancing Script', cursive;
+    font-size: 15px; color: #ddd; margin-top: 1px;
+  }
+
+  .header img {
+    height: 80px; border-radius: 50%;
+    border: 2px solid #E67E22;
+  }
+
+  /* ── Body — horizontal layout ── */
+  .body {
+    display: flex; gap: 0; padding: 0;
+  }
+
+  /* Column */
+  .col {
+    flex: 1; padding: 24px 20px;
+    display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  }
+  .col + .col { border-left: 1px solid rgba(0,0,0,0.07); }
+
+  /* Section title */
+  .stitle {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px; font-weight: 900; color: #1a1a1a;
+    text-align: center; margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .stitle span {
+    border-bottom: 2px solid #E67E22;
+    padding-bottom: 2px;
+  }
+
+  /* Taco cards */
+  .tacos-row { display: flex; gap: 10px; }
+  .taco-card {
+    background: transparent;
+    border: 2px solid #E67E22;
+    color: #1a1a1a; padding: 14px 14px; border-radius: 8px;
+    text-align: center; flex: 1;
+  }
+  .taco-card .name { font-size: 13px; font-weight: 800; }
+  .taco-card .sub { font-size: 10px; color: #888; }
+  .taco-card .price { font-size: 28px; font-weight: 900; color: #E67E22; margin-top: 2px; }
+  .taco-card .each { font-size: 10px; color: #999; }
+
+  /* Guisos */
+  .guisos { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .guiso {
+    background: transparent; border: 1.5px solid #333;
+    border-radius: 8px; padding: 10px 20px;
+    font-weight: 700; font-size: 13px; color: #333; letter-spacing: 0.3px;
+  }
+  .guiso-note {
+    text-align: center; font-size: 10px; color: #aaa; font-style: italic;
+  }
+
+  /* Bebidas */
+  .bebidas-row { display: flex; gap: 10px; justify-content: center; }
+  .bebida {
+    background: transparent; border: 2px solid #E67E22;
+    padding: 14px 18px; border-radius: 8px; text-align: center; flex: 1;
+  }
+  .bebida .name { font-size: 10px; font-weight: 600; color: #888; }
+  .bebida .size { font-size: 13px; font-weight: 700; color: #333; }
+  .bebida .price { font-size: 22px; font-weight: 900; color: #E67E22; }
+
+  /* ── Footer ── */
+  .footer {
+    background: #1a1a1a; border-top: 3px solid #E67E22;
+    padding: 6px; text-align: center;
+    color: rgba(255,255,255,0.5); font-size: 10px;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .menu { box-shadow: none; border-radius: 0; width: 100%; }
+    @page { size: landscape; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="menu">
+  <div class="header">
+    <img src="logo.png" alt="Logo">
+    <div class="header-text">
+      <h1>TAQUERÍA EL MASTER</h1>
+      <div class="slogan">~ Sabor en cada mordida ~</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- Col 1: Tacos + Extras -->
+    <div class="col">
+      <div class="stitle"><span>🌮 NUESTROS TACOS</span></div>
+      <div class="tacos-row">
+        <div class="taco-card">
+          <div class="name">TACOS ROJOS</div>
+          <div class="sub">de Maíz</div>
+          <div class="price">$20</div>
+          <div class="each">c/u</div>
+        </div>
+        <div class="taco-card">
+          <div class="name">TACOS DE HARINA</div>
+          <div class="sub">&nbsp;</div>
+          <div class="price">$20</div>
+          <div class="each">c/u</div>
+        </div>
+      </div>
+      <div class="tacos-row">
+        <div class="taco-card">
+          <div class="name">CHILE RELLENO</div>
+          <div class="sub">&nbsp;</div>
+          <div class="price">$20</div>
+          <div class="each">c/u</div>
+        </div>
+        <div class="taco-card">
+          <div class="name">EMPANADAS</div>
+          <div class="sub">&nbsp;</div>
+          <div class="price">$20</div>
+          <div class="each">c/u</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Col 2: Guisos -->
+    <div class="col">
+      <div class="stitle"><span>🍳 GUISOS</span></div>
+      <div class="guisos">
+        <div class="guiso">Papa</div>
+        <div class="guiso">Picadillo</div>
+        <div class="guiso">Pastor</div>
+        <div class="guiso">Deshebrada</div>
+        <div class="guiso">Chicharrón Prensado</div>
+      </div>
+      <p class="guiso-note">Elige tu guiso favorito</p>
+    </div>
+
+    <!-- Col 3: Bebidas -->
+    <div class="col">
+      <div class="stitle"><span>🍋 BEBIDAS</span></div>
+      <div class="bebidas-row">
+        <div class="bebida">
+          <div class="name">AGUA DE LIMÓN</div>
+          <div class="size">1 Litro</div>
+          <div class="price">$40</div>
+        </div>
+        <div class="bebida">
+          <div class="name">AGUA DE LIMÓN</div>
+          <div class="size">½ Litro</div>
+          <div class="price">$25</div>
+        </div>
+      </div>
+      <div class="bebidas-row">
+        <div class="bebida">
+          <div class="name">REFRESCO</div>
+          <div class="size">Coca-Cola</div>
+          <div class="price">$25</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">¡Gracias por su preferencia! 🌮</div>
+</div>
+
+</body>
+</html>

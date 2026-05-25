@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tarjetas - Taquería El Master</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Poppins:wght@400;600;700;800&family=Dancing+Script:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .page {
+    width: 7.5in;
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px;
+  }
+
+  .card {
+    width: 3.375in; height: 2.125in;
+    background: #FFFAF5;
+    border-radius: 10px; overflow: hidden;
+    border: 1.5px solid #222;
+    display: flex; flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .card-header {
+    background: #1a1a1a;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 2px solid #E67E22;
+  }
+  .card-header img {
+    height: 36px; border-radius: 50%;
+    border: 1.5px solid #E67E22;
+  }
+  .card-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px; font-weight: 900; color: #E67E22;
+    letter-spacing: 1px; line-height: 1.1;
+  }
+  .card-header .slogan {
+    font-family: 'Dancing Script', cursive;
+    font-size: 10px; color: #ccc;
+  }
+
+  .card-body {
+    flex: 1; padding: 8px 12px;
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  }
+
+  .items-row {
+    display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;
+  }
+  .item {
+    background: transparent; border: 1px solid #E67E22;
+    border-radius: 4px; padding: 2px 7px;
+    font-size: 8px; font-weight: 700; color: #333;
+  }
+  .price-line {
+    text-align: center; font-size: 10px; color: #E67E22; font-weight: 800;
+  }
+  .delivery-line {
+    text-align: center; font-size: 9px; font-weight: 700; color: #555;
+  }
+
+  .card-footer {
+    background: #1a1a1a;
+    border-top: 2px solid #E67E22;
+    padding: 5px 12px;
+    text-align: center;
+  }
+  .phone {
+    font-size: 9px; font-weight: 800; color: white;
+    letter-spacing: 0.3px;
+  }
+
+  .cut-note {
+    width: 100%; text-align: center;
+    font-size: 10px; color: #aaa; margin-top: 8px;
+    font-style: italic;
+  }
+
+  @media print {
+    body { background: white; padding: 0; }
+    .card { box-shadow: none; }
+    .cut-note { color: #ccc; }
+    @page { margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <img src="logo.png" alt="Logo">
+      <div>
+        <h2>TAQUERÍA EL MASTER</h2>
+        <div class="slogan">Sabor en cada mordida</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="items-row">
+        <div class="item">Tacos Rojos</div>
+        <div class="item">Tacos de Harina</div>
+        <div class="item">Chile Relleno</div>
+        <div class="item">Empanadas</div>
+      </div>
+      <div class="price-line">Cualquiera a $20 · 5 guisos a elegir</div>
+      <div class="items-row">
+        <div class="item">Agua de Limón</div>
+        <div class="item">Coca-Cola</div>
+      </div>
+      <div class="delivery-line">🏍️ Pedidos a domicilio</div>
+    </div>
+    <div class="card-footer">
+      <div class="phone">📞 868 136 1010 · 📍 Palmares, Islas Feroe</div>
+    </div>
+  </div>
+
+  <p class="cut-note">✂️ Recortar por los bordes de cada tarjeta — Tamaño: tarjeta de débito (8.5 x 5.4 cm)</p>
+</div>
+
+</body>
+</html>
