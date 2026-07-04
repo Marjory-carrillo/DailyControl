@@ -3,17 +3,18 @@ import { supabase } from '../lib/supabaseClient';
 
 const OrdersContext = createContext();
 
-export function OrdersProvider({ children }) {
+export function OrdersProvider({ children, restaurantId }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!restaurantId) return;
     fetchOrders();
 
     // Supabase Realtime Subscription
     const channel = supabase
       .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${restaurantId}` }, (payload) => {
         handleRealtimeEvent(payload);
       })
       .subscribe();
@@ -21,13 +22,14 @@ export function OrdersProvider({ children }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [restaurantId]);
 
   const fetchOrders = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('orders')
       .select('*')
+      .eq('restaurant_id', restaurantId)
       .order('timestamp', { ascending: false });
       
     if (error) {
@@ -50,9 +52,10 @@ export function OrdersProvider({ children }) {
 
   const addOrder = async (orderData) => {
     // Add to supabase
+    const orderWithTenant = { ...orderData, restaurant_id: restaurantId };
     const { data, error } = await supabase
       .from('orders')
-      .insert([orderData])
+      .insert([orderWithTenant])
       .select();
       
     if (error) {

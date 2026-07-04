@@ -69,15 +69,28 @@ export default function DeliveryView({ onLogout }) {
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(0,0,0,0.03)', padding: '10px', borderRadius: '8px' }}>
-                <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', display: 'flex', gap: '6px' }}>
-                  <MapPin size={16} color="var(--primary-color)" />
-                  <strong>{order.delivery.address}</strong>
-                </p>
-                {order.delivery.phone && (
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)' }}>
-                    📞 {order.delivery.phone}
+              <div style={{ background: 'rgba(0,0,0,0.03)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {order.delivery.clientName && (
+                  <p style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    👤 {order.delivery.clientName}
                   </p>
+                )}
+                <p style={{ margin: 0, fontSize: '0.9rem', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <MapPin size={16} color="var(--primary-color)" />
+                  <strong>{order.delivery.address || `${order.delivery.calle || ''} ${order.delivery.numero ? '#'+order.delivery.numero : ''}`.trim()}</strong>
+                </p>
+                {order.delivery.colonia && (
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)', paddingLeft: '22px' }}>
+                    {order.delivery.colonia}
+                  </p>
+                )}
+                {order.delivery.phone && (
+                  <a
+                    href={`tel:${order.delivery.phone}`}
+                    style={{ margin: 0, fontSize: '1rem', color: '#1565C0', fontWeight: 'bold', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px', background: '#E3F2FD', borderRadius: '8px', marginTop: '4px' }}
+                  >
+                    📞 {order.delivery.phone} — Toca para llamar
+                  </a>
                 )}
               </div>
 

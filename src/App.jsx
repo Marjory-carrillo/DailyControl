@@ -79,7 +79,7 @@ function PinModal({ onSuccess, onCancel }) {
   );
 }
 
-function AppShell() {
+function AppShell({ onLogout }) {
   const [activeTab, setActiveTab] = useState('pos');
   const [pendingTab, setPendingTab] = useState(null);
   const { config } = useApp();
@@ -147,6 +147,9 @@ function AppShell() {
         ))}
 
         <div style={{ flex: 1 }} />
+        <button onClick={onLogout} style={{ background: 'transparent', border: 'none', color: 'var(--text-light)', cursor: 'pointer', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+          <Lock size={20} /> Salir
+        </button>
       </nav>
 
       {/* ── Main Content ── */}
@@ -208,103 +211,51 @@ function NavItem({ icon, label, active, onClick, locked, compact = false }) {
 }
 
 import { OrdersProvider } from './context/OrdersContext';
+import LoginView from './components/Auth/LoginView';
+import { supabase } from './lib/supabaseClient';
 
-function RoleSelector({ onSelectRole }) {
-  const [pinMode, setPinMode] = useState(false);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState(false);
+export default function App() {
+  const [session, setSession] = useState(() => {
+    const saved = localStorage.getItem('appSession');
+    if (saved) return JSON.parse(saved);
+    // Legacy fallback
+    const oldRole = localStorage.getItem('appRole');
+    if (oldRole === 'restaurant') return { role: 'admin' };
+    if (oldRole === 'delivery') return { role: 'repartidor' };
+    return null;
+  });
 
-  const handleDeliverySubmit = (e) => {
-    e.preventDefault();
-    if (pin === '0000') {
-      onSelectRole('delivery');
-    } else {
-      setError(true);
-      setPin('');
-    }
+  const handleLoginSuccess = (sessionData) => {
+    localStorage.setItem('appSession', JSON.stringify(sessionData));
+    setSession(sessionData);
   };
 
-  if (pinMode) {
+  const handleLogout = async () => {
+    if (session?.role === 'admin') {
+      await supabase.auth.signOut();
+    }
+    localStorage.removeItem('appSession');
+    setSession(null);
+  };
+
+  if (!session) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)' }}>
-        <div className="glass-panel" style={{ padding: '40px', width: '320px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ fontSize: '2.5rem' }}>🛵</div>
-          <h2>Acceso Repartidor</h2>
-          <form onSubmit={handleDeliverySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <input
-              type="password"
-              maxLength={4}
-              autoFocus
-              value={pin}
-              onChange={e => { setPin(e.target.value); setError(false); }}
-              placeholder="PIN de Repartidor"
-              style={{ textAlign: 'center', letterSpacing: '10px', fontSize: '1.4rem', padding: '14px', borderRadius: '10px', border: error ? '2px solid var(--primary-color)' : '1px solid rgba(0,0,0,0.15)', outline: 'none' }}
-            />
-            {error && <p style={{ color: 'var(--primary-color)', margin: 0, fontSize: '0.9rem' }}>PIN incorrecto.</p>}
-            <button className="btn-primary" type="submit" style={{ padding: '13px' }}>Entrar</button>
-            <button type="button" onClick={() => setPinMode(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '6px' }}>Volver</button>
-          </form>
-        </div>
-      </div>
+      <ToastProvider>
+        <LoginView onLoginSuccess={handleLoginSuccess} />
+      </ToastProvider>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', gap: '20px' }}>
-      <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🌮</div>
-      <h1 style={{ color: 'var(--text-dark)' }}>¿Quién eres?</h1>
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button 
-          onClick={() => onSelectRole('restaurant')}
-          className="glass-panel" 
-          style={{ width: '200px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
-          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <ChefHat size={48} color="var(--primary-color)" />
-          <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Restaurante</h2>
-          <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>Punto de venta y admin</p>
-        </button>
-        
-        <button 
-          onClick={() => setPinMode(true)}
-          className="glass-panel" 
-          style={{ width: '200px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
-          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <Navigation size={48} color="#FF9800" />
-          <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Repartidor</h2>
-          <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>App de entregas</p>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function App() {
-  const [role, setRole] = useState(() => localStorage.getItem('appRole'));
-
-  const handleSelectRole = (selectedRole) => {
-    localStorage.setItem('appRole', selectedRole);
-    setRole(selectedRole);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('appRole');
-    setRole(null);
-  };
-
-  if (!role) {
-    return <RoleSelector onSelectRole={handleSelectRole} />;
-  }
-
-  return (
     <AppProvider>
-      <OrdersProvider>
+      <OrdersProvider restaurantId={session.restaurant_id}>
         <FinanzasProvider>
           <ToastProvider>
-            {role === 'delivery' ? <DeliveryView onLogout={handleLogout} /> : <AppShell />}
+            {session.role === 'admin' ? (
+              <AppShell onLogout={handleLogout} />
+            ) : (
+              <DeliveryView onLogout={handleLogout} />
+            )}
           </ToastProvider>
         </FinanzasProvider>
       </OrdersProvider>

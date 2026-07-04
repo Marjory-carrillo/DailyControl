@@ -17,6 +17,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
   const [deliveryNumero, setDeliveryNumero] = useState('');
   const [deliveryColonia, setDeliveryColonia] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
+  const [deliveryClientName, setDeliveryClientName] = useState('');
 
   // Track occupied tables
   const [occupiedTables, setOccupiedTables] = useState([]);
@@ -40,7 +41,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
     if (cart.length === 0) {
       setNote(''); setDiscount(''); setPaymentMethod('Efectivo');
       setTableNumber(''); setIsDelivery(false);
-      setDeliveryCalle(''); setDeliveryNumero(''); setDeliveryColonia(''); setDeliveryPhone('');
+      setDeliveryCalle(''); setDeliveryNumero(''); setDeliveryColonia(''); setDeliveryPhone(''); setDeliveryClientName('');
       if (onSetActivePersona) onSetActivePersona('');
     }
   }, [cart.length]);
@@ -56,7 +57,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
   };
 
   const executeAction = (type, meseroName) => {
-    const deliveryInfo = isDelivery ? { colonia: deliveryColonia, calle: deliveryCalle, numero: deliveryNumero, phone: deliveryPhone } : null;
+    const deliveryInfo = isDelivery ? { colonia: deliveryColonia, calle: deliveryCalle, numero: deliveryNumero, phone: deliveryPhone, clientName: deliveryClientName } : null;
     onCheckout(note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, isDelivery ? null : tableNumber, type);
   };
 
@@ -250,22 +251,27 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
               <input type="checkbox" checked={isDelivery} onChange={e => setIsDelivery(e.target.checked)} style={{ width: '16px', height: '16px' }} />
               <Bike size={18} color="var(--primary-color)" /> Domicilio
             </label>
-            {isDelivery && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MapPin size={15} color="var(--text-light)" />
-                  <input value={deliveryColonia} onChange={e => setDeliveryColonia(e.target.value)} placeholder="Colonia..." style={{ ...inputStyle, flex: 1 }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '23px' }}>
-                  <input value={deliveryCalle} onChange={e => setDeliveryCalle(e.target.value)} placeholder="Calle..." style={{ ...inputStyle, flex: 2 }} />
-                  <input value={deliveryNumero} onChange={e => setDeliveryNumero(e.target.value)} placeholder="No..." style={{ ...inputStyle, flex: 1 }} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Phone size={15} color="var(--text-light)" />
-                  <input value={deliveryPhone} onChange={e => setDeliveryPhone(e.target.value)} placeholder="Teléfono" style={{ ...inputStyle, flex: 1 }} />
-                </div>
+          {isDelivery && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Nombre del cliente */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserCircle2 size={15} color="var(--text-light)" />
+                <input value={deliveryClientName} onChange={e => setDeliveryClientName(e.target.value)} placeholder="Nombre del cliente..." style={{ ...inputStyle, flex: 1 }} />
               </div>
-            )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={15} color="var(--text-light)" />
+                <input value={deliveryColonia} onChange={e => setDeliveryColonia(e.target.value)} placeholder="Colonia..." style={{ ...inputStyle, flex: 1 }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '23px' }}>
+                <input value={deliveryCalle} onChange={e => setDeliveryCalle(e.target.value)} placeholder="Calle..." style={{ ...inputStyle, flex: 2 }} />
+                <input value={deliveryNumero} onChange={e => setDeliveryNumero(e.target.value)} placeholder="No..." style={{ ...inputStyle, flex: 1 }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Phone size={15} color="var(--text-light)" />
+                <input value={deliveryPhone} onChange={e => setDeliveryPhone(e.target.value)} placeholder="Teléfono" style={{ ...inputStyle, flex: 1 }} />
+              </div>
+            </div>
+          )}
           </div>
         )}
 
@@ -274,13 +280,15 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
               disabled={cart.length === 0} onClick={() => handleAction('save')}>Guardar</button>
-            <button className="btn-primary" style={{ flex: 1, background: 'var(--success-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
-              disabled={cart.length === 0} onClick={() => handleAction('checkout')}>Cobrar</button>
+            <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
+              disabled={cart.length === 0} onClick={() => handleAction('prepare')}>
+              🍳 Preparar
+            </button>
           </div>
         ) : (
-          <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem' }}
-            disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('checkout')}>
-            <Printer size={20} /> Cobrar (Domicilio)
+          <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem', background: '#FF9800' }}
+            disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('prepare')}>
+            🛵 Preparar (Domicilio)
           </button>
         )}
       </div>

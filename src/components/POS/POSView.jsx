@@ -5,9 +5,10 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
 import { printTicket } from '../../utils/printTicket';
-import { ShoppingCart, Search, X, ClipboardList, Bike } from 'lucide-react';
+import { printKitchenNote } from '../../utils/printKitchenNote';
+import { ShoppingCart, Search, X, ClipboardList, UtensilsCrossed } from 'lucide-react';
 import OpenAccountsModal from './OpenAccountsModal';
-import DeliveryQueueModal from './DeliveryQueueModal';
+import KitchenView from '../Kitchen/KitchenView';
 
 export default function POSView() {
   const { categories, products, config } = useApp();
@@ -19,7 +20,7 @@ export default function POSView() {
   const [mobileView, setMobileView] = useState('menu');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showOpenAccounts, setShowOpenAccounts] = useState(false);
-  const [showDeliveryQueue, setShowDeliveryQueue] = useState(false);
+  const [showKitchen, setShowKitchen] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
   const [activePersona, setActivePersona] = useState(''); // current persona for adding items
 
@@ -98,7 +99,14 @@ export default function POSView() {
         // pero vamos a mantener openAccounts en local para mesas, y checkout en Supabase)
       }
 
-      if (actionType === 'checkout') {
+      // 'prepare': imprime comanda para cocina y guarda con status en_preparacion
+      if (actionType === 'prepare') {
+        const prepOrder = { ...orderData, status: 'en_preparacion' };
+        await addOrder(prepOrder);
+        printKitchenNote(prepOrder);
+        addToast(`Comanda #${orderId} enviada a cocina 🍳`, 'success');
+        setShowKitchen(true); // abrir cocina automáticamente
+      } else if (actionType === 'checkout') {
         await addOrder(orderData); // Guardar en Supabase
 
         const shift = JSON.parse(currentShiftStr);
@@ -181,9 +189,9 @@ export default function POSView() {
                   <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }} />
                   {searchTerm && <X size={16} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
                 </div>
-                <button onClick={() => setShowDeliveryQueue(true)}
+                <button onClick={() => setShowKitchen(true)}
                   style={{ background: '#FF9800', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
-                  <Bike size={16} /> Cocina
+                  <UtensilsCrossed size={16} /> Cocina
                 </button>
                 <button onClick={() => setShowOpenAccounts(true)}
                   style={{ background: 'var(--primary-color)', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
@@ -225,8 +233,8 @@ export default function POSView() {
           <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
         )}
         
-        {showDeliveryQueue && (
-          <DeliveryQueueModal onClose={() => setShowDeliveryQueue(false)} />
+        {showKitchen && (
+          <KitchenView onClose={() => setShowKitchen(false)} />
         )}
       </div>
     );
@@ -243,9 +251,9 @@ export default function POSView() {
               <input type="text" placeholder="Buscar producto por nombre..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' }} />
               {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
             </div>
-            <button onClick={() => setShowDeliveryQueue(true)}
+            <button onClick={() => setShowKitchen(true)}
               style={{ background: '#FF9800', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-              <Bike size={18} /> Delivery
+              <UtensilsCrossed size={18} /> Cocina
             </button>
             <button onClick={() => setShowOpenAccounts(true)}
               style={{ background: 'var(--primary-color)', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
@@ -279,8 +287,8 @@ export default function POSView() {
         <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
       )}
       
-      {showDeliveryQueue && (
-        <DeliveryQueueModal onClose={() => setShowDeliveryQueue(false)} />
+      {showKitchen && (
+        <KitchenView onClose={() => setShowKitchen(false)} />
       )}
     </div>
   );
