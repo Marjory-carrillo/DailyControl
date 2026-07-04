@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
 
 export default function LoginView({ onLoginSuccess }) {
-  const [view, setView] = useState('selection'); // 'selection' | 'owner_login' | 'owner_register' | 'employee_login'
+  const [view, setView] = useState('selection');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -12,13 +12,44 @@ export default function LoginView({ onLoginSuccess }) {
   const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const addToast = useToast(); // useToast() devuelve la función directamente
+  const addToast = useToast(); // devuelve la función directamente
 
   const showError = (msg) => {
     setErrorMsg(msg);
     if (addToast) addToast(msg, 'error');
   };
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  // Busca el restaurante del dueño o lo crea si no existe
+  const getOrCreateRestaurant = async (user) => {
+    let { data: restData } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (!restData) {
+      const defaultName = email.split('@')[0];
+      const { data: newRest, error: createErr } = await supabase
+        .from('restaurants')
+        .insert([{ owner_id: user.id, name: `Negocio de ${defaultName}` }])
+        .select()
+        .single();
+      if (createErr) throw new Error(`Error al crear restaurante: ${createErr.message}`);
+      restData = newRest;
+    }
+    return restData;
+  };
+
+  const finishLogin = (user, restData) => {
+    const sessionData = { role: 'admin', restaurant_id: restData.id, user, restaurantName: restData.name };
+    if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
+    if (addToast) addToast(`¡Bienvenido!`, 'success');
+    onLoginSuccess(sessionData);
+  };
+
+  // ── Iniciar sesión (dueño) ─────────────────────────────────────────────────
   const handleOwnerLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -26,20 +57,8 @@ export default function LoginView({ onLoginSuccess }) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-
-      // Obtener el restaurante del dueño
-      const { data: restData, error: restError } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('owner_id', data.user.id)
-        .single();
-
-      if (restError || !restData) throw new Error('No se encontró un restaurante asociado a esta cuenta.');
-
-      if (addToast) addToast(`¡Bienvenido, ${restData.name}!`, 'success');
-      const sessionData = { role: 'admin', restaurant_id: restData.id, user: data.user, restaurantName: restData.name };
-      if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
-      onLoginSuccess(sessionData);
+      const restData = await getOrCreateRestaurant(data.user);
+      finishLogin(data.user, restData);
     } catch (err) {
       showError(err.message === 'Invalid login credentials'
         ? 'Correo o contraseña incorrectos.'
@@ -49,64 +68,34 @@ export default function LoginView({ onLoginSuccess }) {
     }
   };
 
+  // ── Registrarse (dueño) ────────────────────────────────────────────────────
   const handleOwnerRegister = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setLoading(true);
     try {
-      // 1. Crear usuario en Supabase Auth (sin confirmación de email)
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { role: 'admin' } }
-      });
+      // Intento 1: signUp
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
 
-      if (error) throw error;
+      let user = signUpData?.user;
 
-      const user = data.user;
-      if (!user) throw new Error('No se pudo crear la cuenta. Intenta de nuevo.');
-
-      // 2. Crear restaurante para este dueño
-      const defaultName = email.split('@')[0];
-      const { data: restData, error: restError } = await supabase
-        .from('restaurants')
-        .insert([{ owner_id: user.id, name: `Negocio de ${defaultName}` }])
-        .select()
-        .single();
-
-      if (restError) {
-        // Si el restaurante ya existe (cuenta previa), intentar obtenerlo
-        const { data: existing } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('owner_id', user.id)
-          .single();
-        if (existing) {
-          const sessionData = { role: 'admin', restaurant_id: existing.id, user, restaurantName: existing.name };
-          if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
-          if (addToast) addToast('¡Cuenta creada! Bienvenido.', 'success');
-          onLoginSuccess(sessionData);
-          return;
-        }
-        throw restError;
+      // Si el correo ya existe, hacer login directo
+      if (signUpError || !user) {
+        const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginErr) throw new Error('Correo ya registrado. Usa la opción "Iniciar sesión" o revisa tu contraseña.');
+        user = loginData.user;
       }
 
-      if (addToast) addToast('¡Cuenta creada! Bienvenido.', 'success');
-      const sessionData = { role: 'admin', restaurant_id: restData.id, user, restaurantName: restData.name };
-      if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
-      onLoginSuccess(sessionData);
+      const restData = await getOrCreateRestaurant(user);
+      finishLogin(user, restData);
     } catch (err) {
-      if (err.message?.includes('already registered')) {
-        showError('Este correo ya está registrado. Inicia sesión.');
-        setView('owner_login');
-      } else {
-        showError(err.message || 'Error al crear la cuenta.');
-      }
+      showError(err.message || 'Error al crear la cuenta.');
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Empleado (código) ──────────────────────────────────────────────────────
   const handleEmployeeLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -132,11 +121,12 @@ export default function LoginView({ onLoginSuccess }) {
     }
   };
 
+  // ── Estilos ────────────────────────────────────────────────────────────────
   const inputStyle = {
     width: '100%', boxSizing: 'border-box', padding: '13px 14px 13px 42px',
     borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.1)',
     background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit',
-    fontSize: '1rem', outline: 'none', transition: 'border-color 0.2s',
+    fontSize: '1rem', outline: 'none',
   };
 
   // ── Pantalla de selección ──────────────────────────────────────────────────
@@ -174,7 +164,7 @@ export default function LoginView({ onLoginSuccess }) {
     );
   }
 
-  // ── Empleado (código de acceso) ────────────────────────────────────────────
+  // ── Empleado ───────────────────────────────────────────────────────────────
   if (view === 'employee_login') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', padding: '20px' }}>
@@ -189,15 +179,16 @@ export default function LoginView({ onLoginSuccess }) {
               <Key size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
               <input autoFocus value={accessCode} onChange={e => setAccessCode(e.target.value.toUpperCase())}
                 placeholder="Ej: TACOSM-K7R2"
-                style={{ ...inputStyle, textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.1rem' }}
+                style={{ ...inputStyle, textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.05rem' }}
                 required />
             </div>
             <RememberMeCheck checked={rememberMe} onChange={setRememberMe} />
             {errorMsg && <ErrorBanner msg={errorMsg} />}
-            <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1.05rem' }} disabled={loading}>
+            <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1rem' }} disabled={loading}>
               {loading ? 'Verificando...' : 'Entrar'}
             </button>
-            <button type="button" onClick={() => { setView('selection'); setErrorMsg(''); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontFamily: 'inherit' }}>
+            <button type="button" onClick={() => { setView('selection'); setErrorMsg(''); }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontFamily: 'inherit' }}>
               ← Volver
             </button>
           </form>
@@ -220,14 +211,11 @@ export default function LoginView({ onLoginSuccess }) {
         </div>
 
         <form onSubmit={isRegister ? handleOwnerRegister : handleOwnerLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Email */}
           <div style={{ position: 'relative' }}>
             <Mail size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="Correo electrónico" style={inputStyle} required autoFocus />
           </div>
-
-          {/* Password */}
           <div style={{ position: 'relative' }}>
             <Lock size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
             <input type={showPassword ? 'text' : 'password'} value={password}
@@ -241,11 +229,10 @@ export default function LoginView({ onLoginSuccess }) {
           </div>
 
           <RememberMeCheck checked={rememberMe} onChange={setRememberMe} />
-
           {errorMsg && <ErrorBanner msg={errorMsg} />}
 
-          <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1.05rem', marginTop: '4px' }} disabled={loading}>
-            {loading ? 'Cargando...' : (isRegister ? 'Crear cuenta y entrar' : 'Iniciar sesión')}
+          <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1rem', marginTop: '4px' }} disabled={loading}>
+            {loading ? 'Cargando...' : (isRegister ? '✓ Crear cuenta y entrar' : 'Iniciar sesión')}
           </button>
         </form>
 
