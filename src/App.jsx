@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, ChefHat, BarChart3, Receipt, UtensilsCrossed, Settings, Lock, Wallet, ClipboardList, Calculator, TrendingUp } from 'lucide-react';
+import { ShoppingCart, ChefHat, BarChart3, Receipt, UtensilsCrossed, Settings, Lock, Wallet, ClipboardList, Calculator, TrendingUp, Navigation } from 'lucide-react';
 import './index.css';
 
 import { AppProvider, useApp } from './context/AppContext';
@@ -13,6 +13,7 @@ import TurnoView from './components/Turno/TurnoView';
 import CosteoView from './components/Costeo/CosteoView';
 import FinanzasView from './components/Finanzas/FinanzasView';
 import { FinanzasProvider } from './context/FinanzasContext';
+import DeliveryView from './components/Delivery/DeliveryView';
 
 // Tabs that are ALWAYS protected (settings can never be unlocked)
 const ALWAYS_PROTECTED = ['settings'];
@@ -206,14 +207,102 @@ function NavItem({ icon, label, active, onClick, locked, compact = false }) {
   );
 }
 
+import { OrdersProvider } from './context/OrdersContext';
+
+function RoleSelector({ onSelectRole }) {
+  const [pinMode, setPinMode] = useState(false);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleDeliverySubmit = (e) => {
+    e.preventDefault();
+    if (pin === '0000') {
+      onSelectRole('delivery');
+    } else {
+      setError(true);
+      setPin('');
+    }
+  };
+
+  if (pinMode) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)' }}>
+        <div className="glass-panel" style={{ padding: '40px', width: '320px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ fontSize: '2.5rem' }}>🛵</div>
+          <h2>Acceso Repartidor</h2>
+          <form onSubmit={handleDeliverySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <input
+              type="password"
+              maxLength={4}
+              autoFocus
+              value={pin}
+              onChange={e => { setPin(e.target.value); setError(false); }}
+              placeholder="PIN de Repartidor"
+              style={{ textAlign: 'center', letterSpacing: '10px', fontSize: '1.4rem', padding: '14px', borderRadius: '10px', border: error ? '2px solid var(--primary-color)' : '1px solid rgba(0,0,0,0.15)', outline: 'none' }}
+            />
+            {error && <p style={{ color: 'var(--primary-color)', margin: 0, fontSize: '0.9rem' }}>PIN incorrecto.</p>}
+            <button className="btn-primary" type="submit" style={{ padding: '13px' }}>Entrar</button>
+            <button type="button" onClick={() => setPinMode(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '6px' }}>Volver</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', gap: '20px' }}>
+      <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🌮</div>
+      <h1 style={{ color: 'var(--text-dark)' }}>¿Quién eres?</h1>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button 
+          onClick={() => onSelectRole('restaurant')}
+          className="glass-panel" 
+          style={{ width: '200px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
+          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <ChefHat size={48} color="var(--primary-color)" />
+          <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Restaurante</h2>
+          <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>Punto de venta y admin</p>
+        </button>
+        
+        <button 
+          onClick={() => setPinMode(true)}
+          className="glass-panel" 
+          style={{ width: '200px', height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
+          onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <Navigation size={48} color="#FF9800" />
+          <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Repartidor</h2>
+          <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>App de entregas</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [role, setRole] = useState(() => localStorage.getItem('appRole'));
+
+  const handleSelectRole = (selectedRole) => {
+    localStorage.setItem('appRole', selectedRole);
+    setRole(selectedRole);
+  };
+
+  if (!role) {
+    return <RoleSelector onSelectRole={handleSelectRole} />;
+  }
+
   return (
     <AppProvider>
-      <FinanzasProvider>
-        <ToastProvider>
-          <AppShell />
-        </ToastProvider>
-      </FinanzasProvider>
+      <OrdersProvider>
+        <FinanzasProvider>
+          <ToastProvider>
+            {role === 'delivery' ? <DeliveryView /> : <AppShell />}
+          </ToastProvider>
+        </FinanzasProvider>
+      </OrdersProvider>
     </AppProvider>
   );
 }

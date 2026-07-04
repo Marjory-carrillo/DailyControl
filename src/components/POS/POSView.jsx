@@ -3,19 +3,23 @@ import MenuGrid from './MenuGrid';
 import CartSidebar from './CartSidebar';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrders } from '../../context/OrdersContext';
 import { printTicket } from '../../utils/printTicket';
-import { ShoppingCart, Search, X, ClipboardList } from 'lucide-react';
+import { ShoppingCart, Search, X, ClipboardList, Bike } from 'lucide-react';
 import OpenAccountsModal from './OpenAccountsModal';
+import DeliveryQueueModal from './DeliveryQueueModal';
 
 export default function POSView() {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
+  const { addOrder } = useOrders();
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileView, setMobileView] = useState('menu');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showOpenAccounts, setShowOpenAccounts] = useState(false);
+  const [showDeliveryQueue, setShowDeliveryQueue] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
   const [activePersona, setActivePersona] = useState(''); // current persona for adding items
 
@@ -58,7 +62,7 @@ export default function POSView() {
 
   const [openAccountId, setOpenAccountId] = useState(null);
 
-  const handleCheckout = (note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, tableNumber, actionType = 'checkout') => {
+  const handleCheckout = async (note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, tableNumber, actionType = 'checkout') => {
     if (cart.length === 0) return;
     
     try {
@@ -85,22 +89,18 @@ export default function POSView() {
         time: new Date().toLocaleTimeString(),
         date: new Date().toLocaleDateString(),
         timestamp: Date.now(),
-        status: actionType === 'save' ? 'open' : 'paid',
+        status: actionType === 'save' ? 'open' : (deliveryInfo ? 'en_preparacion' : 'paid'),
       };
 
       // Update Order History
       if (actionType === 'save' || !openAccountId) {
-        const prevOrders = JSON.parse(localStorage.getItem('orderHistory') || '[]');
-        const kIdx = prevOrders.findIndex(o => o.id === orderId);
-        if (kIdx >= 0) {
-          prevOrders[kIdx] = { ...prevOrders[kIdx], items: orderData.items, note: orderData.note, table: orderData.table, status: actionType === 'save' ? 'open' : 'completed' };
-        } else {
-          prevOrders.push({ ...orderData, status: actionType === 'save' ? 'open' : 'completed' });
-        }
-        localStorage.setItem('orderHistory', JSON.stringify(prevOrders));
+        // Enviar a Supabase (sólo si es checkout o estamos guardando un openAccountId por primera vez en Supabase, 
+        // pero vamos a mantener openAccounts en local para mesas, y checkout en Supabase)
       }
 
       if (actionType === 'checkout') {
+        await addOrder(orderData); // Guardar en Supabase
+
         const shift = JSON.parse(currentShiftStr);
         shift.orders += 1;
         if (method === 'Efectivo') shift.ventasEfectivo += total;
@@ -181,6 +181,10 @@ export default function POSView() {
                   <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }} />
                   {searchTerm && <X size={16} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
                 </div>
+                <button onClick={() => setShowDeliveryQueue(true)}
+                  style={{ background: '#FF9800', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
+                  <Bike size={16} /> Cocina
+                </button>
                 <button onClick={() => setShowOpenAccounts(true)}
                   style={{ background: 'var(--primary-color)', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
                   <ClipboardList size={16} /> Ctas
@@ -220,6 +224,10 @@ export default function POSView() {
         {showOpenAccounts && (
           <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
         )}
+        
+        {showDeliveryQueue && (
+          <DeliveryQueueModal onClose={() => setShowDeliveryQueue(false)} />
+        )}
       </div>
     );
   }
@@ -235,6 +243,10 @@ export default function POSView() {
               <input type="text" placeholder="Buscar producto por nombre..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' }} />
               {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
             </div>
+            <button onClick={() => setShowDeliveryQueue(true)}
+              style={{ background: '#FF9800', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+              <Bike size={18} /> Delivery
+            </button>
             <button onClick={() => setShowOpenAccounts(true)}
               style={{ background: 'var(--primary-color)', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
               <ClipboardList size={18} /> Abiertas
@@ -265,6 +277,10 @@ export default function POSView() {
 
       {showOpenAccounts && (
         <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
+      )}
+      
+      {showDeliveryQueue && (
+        <DeliveryQueueModal onClose={() => setShowDeliveryQueue(false)} />
       )}
     </div>
   );
