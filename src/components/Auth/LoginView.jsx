@@ -1,55 +1,107 @@
 import React, { useState } from 'react';
-import { ChefHat, Navigation, Mail, Lock, Key } from 'lucide-react';
+import { ChefHat, Navigation, Mail, Lock, Key, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
 
 export default function LoginView({ onLoginSuccess }) {
-  const [view, setView] = useState('selection'); // 'selection', 'owner_login', 'owner_register', 'employee_login'
+  const [view, setView] = useState('selection'); // 'selection' | 'owner_login' | 'owner_register' | 'employee_login'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const { addToast } = useToast();
+  const [errorMsg, setErrorMsg] = useState('');
+  const addToast = useToast(); // useToast() devuelve la función directamente
 
-  const handleOwnerAuth = async (e, isRegister) => {
+  const showError = (msg) => {
+    setErrorMsg(msg);
+    if (addToast) addToast(msg, 'error');
+  };
+
+  const handleOwnerLogin = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     setLoading(true);
     try {
-      if (isRegister) {
-        // Registrar usuario
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        
-        if (data.user) {
-          // Crear restaurante por defecto para este dueño
-          const { data: restData, error: restError } = await supabase
-            .from('restaurants')
-            .insert([{ owner_id: data.user.id, name: 'Mi Restaurante' }])
-            .select()
-            .single();
-            
-          if (restError) throw restError;
-          addToast('Registro exitoso', 'success');
-          onLoginSuccess({ role: 'admin', restaurant_id: restData.id, user: data.user });
-        }
-      } else {
-        // Iniciar sesión
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        
-        // Obtener el restaurante del dueño
-        const { data: restData, error: restError } = await supabase
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // Obtener el restaurante del dueño
+      const { data: restData, error: restError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('owner_id', data.user.id)
+        .single();
+
+      if (restError || !restData) throw new Error('No se encontró un restaurante asociado a esta cuenta.');
+
+      if (addToast) addToast(`¡Bienvenido, ${restData.name}!`, 'success');
+      const sessionData = { role: 'admin', restaurant_id: restData.id, user: data.user, restaurantName: restData.name };
+      if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
+      onLoginSuccess(sessionData);
+    } catch (err) {
+      showError(err.message === 'Invalid login credentials'
+        ? 'Correo o contraseña incorrectos.'
+        : err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOwnerRegister = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      // 1. Crear usuario en Supabase Auth (sin confirmación de email)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { role: 'admin' } }
+      });
+
+      if (error) throw error;
+
+      const user = data.user;
+      if (!user) throw new Error('No se pudo crear la cuenta. Intenta de nuevo.');
+
+      // 2. Crear restaurante para este dueño
+      const defaultName = email.split('@')[0];
+      const { data: restData, error: restError } = await supabase
+        .from('restaurants')
+        .insert([{ owner_id: user.id, name: `Negocio de ${defaultName}` }])
+        .select()
+        .single();
+
+      if (restError) {
+        // Si el restaurante ya existe (cuenta previa), intentar obtenerlo
+        const { data: existing } = await supabase
           .from('restaurants')
           .select('*')
-          .eq('owner_id', data.user.id)
+          .eq('owner_id', user.id)
           .single();
-          
-        if (restError) throw restError;
-        addToast('Bienvenido', 'success');
-        onLoginSuccess({ role: 'admin', restaurant_id: restData.id, user: data.user });
+        if (existing) {
+          const sessionData = { role: 'admin', restaurant_id: existing.id, user, restaurantName: existing.name };
+          if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
+          if (addToast) addToast('¡Cuenta creada! Bienvenido.', 'success');
+          onLoginSuccess(sessionData);
+          return;
+        }
+        throw restError;
       }
-    } catch (error) {
-      addToast(error.message, 'error');
+
+      if (addToast) addToast('¡Cuenta creada! Bienvenido.', 'success');
+      const sessionData = { role: 'admin', restaurant_id: restData.id, user, restaurantName: restData.name };
+      if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
+      onLoginSuccess(sessionData);
+    } catch (err) {
+      if (err.message?.includes('already registered')) {
+        showError('Este correo ya está registrado. Inicia sesión.');
+        setView('owner_login');
+      } else {
+        showError(err.message || 'Error al crear la cuenta.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,98 +109,175 @@ export default function LoginView({ onLoginSuccess }) {
 
   const handleEmployeeLogin = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     setLoading(true);
     try {
-      // Buscar empleado por código
+      const code = accessCode.trim().toUpperCase();
       const { data, error } = await supabase
         .from('employees')
         .select('*, restaurants(name)')
-        .eq('access_code', accessCode)
+        .eq('access_code', code)
         .single();
-        
-      if (error || !data) throw new Error('Código incorrecto o no existe.');
-      
-      addToast(`Conectado a ${data.restaurants.name}`, 'success');
-      onLoginSuccess({ role: data.role, restaurant_id: data.restaurant_id, employeeInfo: data });
-    } catch (error) {
-      addToast(error.message, 'error');
+
+      if (error || !data) throw new Error('Código incorrecto. Verifica con tu empleador.');
+
+      if (addToast) addToast(`Conectado a ${data.restaurants?.name || 'tu restaurante'} ✓`, 'success');
+      const sessionData = { role: data.role, restaurant_id: data.restaurant_id, employeeInfo: data };
+      if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
+      onLoginSuccess(sessionData);
+    } catch (err) {
+      showError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' };
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box', padding: '13px 14px 13px 42px',
+    borderRadius: '10px', border: '1.5px solid rgba(0,0,0,0.1)',
+    background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit',
+    fontSize: '1rem', outline: 'none', transition: 'border-color 0.2s',
+  };
 
+  // ── Pantalla de selección ──────────────────────────────────────────────────
   if (view === 'selection') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', gap: '20px' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🌮</div>
-        <h1 style={{ color: 'var(--text-dark)' }}>Ingresar al Sistema</h1>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button onClick={() => setView('owner_login')} className="glass-panel" style={{ width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <ChefHat size={48} color="var(--primary-color)" />
-            <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Dueño / Admin</h2>
-            <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem', textAlign: 'center', padding: '0 10px' }}>Gestiona tu restaurante y ventas</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', gap: '20px', padding: '20px' }}>
+        <div style={{ fontSize: '3.5rem' }}>🌮</div>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ margin: 0, color: 'var(--text-dark)' }}>DailyControl</h1>
+          <p style={{ color: 'var(--text-light)', margin: '6px 0 0 0' }}>¿Cómo deseas ingresar?</p>
+        </div>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '480px', width: '100%' }}>
+          <button onClick={() => setView('owner_login')} className="glass-panel"
+            style={{ flex: '1 1 160px', minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.04)'}
+            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
+            <ChefHat size={42} color="var(--primary-color)" />
+            <div>
+              <div style={{ fontWeight: '700', color: 'var(--text-dark)', fontSize: '1rem' }}>Dueño / Admin</div>
+              <div style={{ color: 'var(--text-light)', fontSize: '0.82rem' }}>Correo y contraseña</div>
+            </div>
           </button>
-          
-          <button onClick={() => setView('employee_login')} className="glass-panel" style={{ width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <Navigation size={48} color="#FF9800" />
-            <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>Empleado</h2>
-            <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.9rem', textAlign: 'center', padding: '0 10px' }}>Repartidores y Staff (Código)</p>
+          <button onClick={() => setView('employee_login')} className="glass-panel"
+            style={{ flex: '1 1 160px', minHeight: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', border: 'none', transition: 'transform 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.04)'}
+            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
+            <Navigation size={42} color="#FF9800" />
+            <div>
+              <div style={{ fontWeight: '700', color: 'var(--text-dark)', fontSize: '1rem' }}>Empleado</div>
+              <div style={{ color: 'var(--text-light)', fontSize: '0.82rem' }}>Mesero o Repartidor</div>
+            </div>
           </button>
         </div>
       </div>
     );
   }
 
+  // ── Empleado (código de acceso) ────────────────────────────────────────────
   if (view === 'employee_login') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)' }}>
-        <div className="glass-panel" style={{ padding: '40px', width: '340px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ fontSize: '2.5rem' }}>🛵</div>
-          <h2>Acceso Empleado</h2>
-          <form onSubmit={handleEmployeeLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', padding: '20px' }}>
+        <div className="glass-panel" style={{ padding: '36px', width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '6px' }}>🛵 🍽️</div>
+            <h2 style={{ margin: 0 }}>Acceso Empleado</h2>
+            <p style={{ color: 'var(--text-light)', fontSize: '0.88rem', margin: '6px 0 0 0' }}>Ingresa el código que te dio tu empleador</p>
+          </div>
+          <form onSubmit={handleEmployeeLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ position: 'relative' }}>
-              <Key size={18} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-              <input type="text" autoFocus value={accessCode} onChange={e => setAccessCode(e.target.value.toUpperCase())} placeholder="Código (Ej: REP-123)" style={{ ...inputStyle, paddingLeft: '40px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 'bold' }} required />
+              <Key size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+              <input autoFocus value={accessCode} onChange={e => setAccessCode(e.target.value.toUpperCase())}
+                placeholder="Ej: TACOSM-K7R2"
+                style={{ ...inputStyle, textTransform: 'uppercase', letterSpacing: '2px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.1rem' }}
+                required />
             </div>
+            <RememberMeCheck checked={rememberMe} onChange={setRememberMe} />
+            {errorMsg && <ErrorBanner msg={errorMsg} />}
             <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1.05rem' }} disabled={loading}>
               {loading ? 'Verificando...' : 'Entrar'}
             </button>
-            <button type="button" onClick={() => setView('selection')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)' }}>Volver</button>
+            <button type="button" onClick={() => { setView('selection'); setErrorMsg(''); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontFamily: 'inherit' }}>
+              ← Volver
+            </button>
           </form>
         </div>
       </div>
     );
   }
 
+  // ── Dueño: Login / Registro ────────────────────────────────────────────────
+  const isRegister = view === 'owner_register';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)' }}>
-      <div className="glass-panel" style={{ padding: '40px', width: '360px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h2 style={{ textAlign: 'center', margin: 0 }}>{view === 'owner_login' ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
-        <form onSubmit={(e) => handleOwnerAuth(e, view === 'owner_register')} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--bg-color)', padding: '20px' }}>
+      <div className="glass-panel" style={{ padding: '36px', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <ChefHat size={40} color="var(--primary-color)" style={{ marginBottom: '8px' }} />
+          <h2 style={{ margin: 0 }}>{isRegister ? 'Crear cuenta' : 'Iniciar sesión'}</h2>
+          <p style={{ color: 'var(--text-light)', fontSize: '0.88rem', margin: '6px 0 0 0' }}>
+            {isRegister ? 'Crea tu cuenta de restaurante' : 'Bienvenido de vuelta'}
+          </p>
+        </div>
+
+        <form onSubmit={isRegister ? handleOwnerRegister : handleOwnerLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Email */}
           <div style={{ position: 'relative' }}>
-            <Mail size={18} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Correo electrónico" style={{ ...inputStyle, paddingLeft: '40px' }} required />
+            <Mail size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="Correo electrónico" style={inputStyle} required autoFocus />
           </div>
+
+          {/* Password */}
           <div style={{ position: 'relative' }}>
-            <Lock size={18} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-light)' }} />
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" style={{ ...inputStyle, paddingLeft: '40px' }} required minLength={6} />
-          </div>
-          <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1.05rem', marginTop: '10px' }} disabled={loading}>
-            {loading ? 'Cargando...' : (view === 'owner_login' ? 'Ingresar' : 'Registrarme')}
-          </button>
-          
-          <div style={{ textAlign: 'center', marginTop: '10px' }}>
-            <button type="button" onClick={() => setView(view === 'owner_login' ? 'owner_register' : 'owner_login')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: 'bold' }}>
-              {view === 'owner_login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
+            <Lock size={17} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <input type={showPassword ? 'text' : 'password'} value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Contraseña (mínimo 6 caracteres)"
+              style={{ ...inputStyle, paddingRight: '42px' }} required minLength={6} />
+            <button type="button" onClick={() => setShowPassword(v => !v)}
+              style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', display: 'flex' }}>
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <button type="button" onClick={() => setView('selection')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: '0.9rem' }}>Volver</button>
-          </div>
+
+          <RememberMeCheck checked={rememberMe} onChange={setRememberMe} />
+
+          {errorMsg && <ErrorBanner msg={errorMsg} />}
+
+          <button className="btn-primary" type="submit" style={{ padding: '14px', fontSize: '1.05rem', marginTop: '4px' }} disabled={loading}>
+            {loading ? 'Cargando...' : (isRegister ? 'Crear cuenta y entrar' : 'Iniciar sesión')}
+          </button>
         </form>
+
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button type="button" onClick={() => { setView(isRegister ? 'owner_login' : 'owner_register'); setErrorMsg(''); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', fontWeight: '700', fontFamily: 'inherit', fontSize: '0.92rem' }}>
+            {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿Eres nuevo? Crea tu cuenta gratis'}
+          </button>
+          <button type="button" onClick={() => { setView('selection'); setErrorMsg(''); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontFamily: 'inherit', fontSize: '0.85rem' }}>
+            ← Volver
+          </button>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function RememberMeCheck({ checked, onChange }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', color: 'var(--text-light)', userSelect: 'none' }}>
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)}
+        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary-color)' }} />
+      Guardar inicio de sesión en este dispositivo
+    </label>
+  );
+}
+
+function ErrorBanner({ msg }) {
+  return (
+    <div style={{ background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.4)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.87rem', color: '#c0392b', fontWeight: '600' }}>
+      ⚠ {msg}
     </div>
   );
 }
