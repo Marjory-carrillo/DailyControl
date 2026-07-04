@@ -16,89 +16,11 @@ import { FinanzasProvider } from './context/FinanzasContext';
 import DeliveryView from './components/Delivery/DeliveryView';
 import MeseroView from './components/Staff/MeseroView';
 
-// Tabs that are ALWAYS protected (settings can never be unlocked)
-const ALWAYS_PROTECTED = ['settings'];
 
-function PinModal({ onSuccess, onCancel }) {
-  const { config } = useApp();
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const correctPin = config.ownerPin || '1234';
-    if (pin === correctPin) {
-      setError(false);
-      onSuccess();
-    } else {
-      setError(true);
-      setPin('');
-    }
-  };
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 2000,
-      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
-    }}>
-      <div className="glass-panel" style={{ padding: '40px', width: '320px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ fontSize: '2.5rem' }}>🔐</div>
-        <div>
-          <h2 style={{ margin: 0 }}>Área Restringida</h2>
-          <p style={{ color: 'var(--text-light)', marginTop: '8px', fontSize: '0.95rem' }}>
-            Este módulo es solo para el dueño o administrador. Ingresa tu PIN para continuar.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <input
-            type="password"
-            maxLength={6}
-            autoFocus
-            value={pin}
-            onChange={e => { setPin(e.target.value); setError(false); }}
-            placeholder="• • • •"
-            style={{
-              textAlign: 'center', letterSpacing: '10px', fontSize: '1.4rem',
-              padding: '14px', borderRadius: '10px',
-              border: error ? '2px solid var(--primary-color)' : '1px solid rgba(0,0,0,0.15)',
-              background: 'rgba(255,255,255,0.5)', fontFamily: 'inherit', outline: 'none',
-            }}
-          />
-          {error && <p style={{ color: 'var(--primary-color)', margin: 0, fontSize: '0.9rem' }}>PIN incorrecto. Intenta de nuevo.</p>}
-          <button className="btn-primary" type="submit" style={{ padding: '13px' }}>
-            <Lock size={16} style={{ marginRight: 8 }} />Entrar
-          </button>
-          <button type="button" onClick={onCancel}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontFamily: 'inherit', padding: '6px' }}>
-            Cancelar
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 function AppShell({ onLogout, session }) {
-  const [activeTab, setActiveTab] = useState('pos');
-  const [pendingTab, setPendingTab] = useState(null);
-  const { config } = useApp();
-
-  const isPinEnabled = config.pinProtectionEnabled !== false;
-
   const handleTabClick = (tab) => {
-    const protectedTabs = config.protectedTabs || ALWAYS_PROTECTED;
-    if (isPinEnabled && protectedTabs.includes(tab)) {
-      setPendingTab(tab);
-    } else {
-      setActiveTab(tab);
-    }
-  };
-
-  const handlePinSuccess = () => {
-    setActiveTab(pendingTab);
-    setPendingTab(null);
+    setActiveTab(tab);
   };
 
   // ── Nav: Mesero removed, Costeo added ──
@@ -106,19 +28,15 @@ function AppShell({ onLogout, session }) {
     { id: 'pos',       label: 'POS',     icon: <ShoppingCart size={20} /> },
     { id: 'turno',     label: 'Turno',   icon: <ClipboardList size={20} /> },
     { id: 'caja',      label: 'Caja',    icon: <Wallet size={20} /> },
-    { id: 'finanzas',  label: 'Finanzas', icon: <TrendingUp size={20} />, alwaysLocked: true },
+    { id: 'finanzas',  label: 'Finanzas', icon: <TrendingUp size={20} /> },
     { id: 'costeo',    label: 'Costeo',  icon: <Calculator size={20} /> },
     { id: 'dashboard', label: 'Ventas',  icon: <BarChart3 size={20} /> },
     { id: 'menu',      label: 'Menú',    icon: <UtensilsCrossed size={20} /> },
-    { id: 'settings',  label: 'Config',  icon: <Settings size={20} />, alwaysLocked: true },
+    { id: 'settings',  label: 'Config',  icon: <Settings size={20} /> },
   ];
 
   return (
     <div className="app-shell" style={{ backgroundColor: config.appBackgroundColor || 'var(--bg-color)' }}>
-      {/* PIN Modal */}
-      {pendingTab && (
-        <PinModal onSuccess={handlePinSuccess} onCancel={() => setPendingTab(null)} />
-      )}
 
       {/* ── Desktop sidebar (left) ── */}
       <nav className="glass-panel app-sidebar">
@@ -160,7 +78,7 @@ function AppShell({ onLogout, session }) {
         {activeTab === 'caja'      && <CajaChicaView />}
         {activeTab === 'finanzas'  && <FinanzasView />}
         {activeTab === 'menu'      && <MenuEditorView />}
-        {activeTab === 'settings'  && <SettingsView restaurantId={session?.restaurant_id} restaurantName={session?.user?.email?.split('@')[0]} />}
+        {activeTab === 'settings'  && <SettingsView restaurantId={session?.restaurant_id} restaurantName={session?.user?.email?.split('@')[0]} onLogout={onLogout} />}
         {activeTab === 'turno'     && <TurnoView />}
         {activeTab === 'costeo'    && <CosteoView />}
       </main>
@@ -170,7 +88,6 @@ function AppShell({ onLogout, session }) {
         {navTabs.map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
-            locked={t.alwaysLocked || config.protectedTabs?.includes(t.id)}
             onClick={() => handleTabClick(t.id)}
             compact
           />
@@ -180,11 +97,11 @@ function AppShell({ onLogout, session }) {
   );
 }
 
-function NavItem({ icon, label, active, onClick, locked, compact = false }) {
+function NavItem({ icon, label, active, onClick, compact = false }) {
   return (
     <button
       onClick={onClick}
-      title={locked ? `${label} (solo dueño)` : label}
+      title={label}
       style={{
         background: active ? 'var(--primary-color)' : 'transparent',
         color: active ? 'white' : 'var(--text-light)',
@@ -204,9 +121,6 @@ function NavItem({ icon, label, active, onClick, locked, compact = false }) {
     >
       {icon}
       <span className="nav-item-label">{label}</span>
-      {locked && !active && (
-        <span style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.5rem' }}>🔒</span>
-      )}
     </button>
   );
 }

@@ -50,7 +50,7 @@ const ALL_TABS = [
   { id: 'menu',      label: 'Editor de Menú' },
 ];
 
-export default function SettingsView({ restaurantId, restaurantName }) {
+export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
   const { config, setConfig, meseros, addMesero, deleteMesero } = useApp();
   const [form, setForm] = useState({ 
     ...config,
@@ -252,64 +252,6 @@ export default function SettingsView({ restaurantId, restaurantName }) {
           </div>
         </div>
 
-        {/* Owner PIN */}
-        <div>
-          <label style={labelStyle}>🔐 PIN del Dueño (para módulos protegidos)</label>
-          <input
-            style={{ ...inputStyle, width: '160px', letterSpacing: '6px', fontSize: '1.2rem' }}
-            name="ownerPin"
-            type="password"
-            maxLength={6}
-            value={form.ownerPin || ''}
-            onChange={handleChange}
-            placeholder="••••"
-          />
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', margin: '6px 0 0 0' }}>
-            Predeterminado: <strong>1234</strong>. Cámbialo para mayor seguridad.
-          </p>
-        </div>
-
-        {/* Protected Modules */}
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <Lock size={18} color="var(--text-light)" />
-            <span style={{ fontWeight: '700', color: 'var(--text-dark)' }}>Módulos con Candado (requieren PIN)</span>
-          </div>
-          
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '600', color: 'var(--primary-color)', margin: '14px 0' }}>
-            <input
-              type="checkbox"
-              checked={form.pinProtectionEnabled !== false}
-              onChange={e => {
-                setForm(prev => ({ ...prev, pinProtectionEnabled: e.target.checked }));
-                setSaved(false);
-              }}
-              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-            />
-            Habilitar Protección con PIN en la Aplicación
-          </label>
-
-          {form.pinProtectionEnabled !== false && (
-            <>
-              <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
-                El módulo de <strong>Configuración</strong> siempre estará protegido. Los demás los puedes activar o desactivar.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                {ALL_TABS.map(tab => (
-                  <label key={tab.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '500', color: 'var(--text-dark)' }}>
-                    <input
-                      type="checkbox"
-                      checked={(form.protectedTabs || []).includes(tab.id)}
-                      onChange={() => toggleProtected(tab.id)}
-                      style={{ width: '17px', height: '17px', cursor: 'pointer' }}
-                    />
-                    {tab.label}
-                  </label>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
 
         {/* Default Fondo de Caja */}
         <div style={sectionStyle}>
@@ -519,13 +461,22 @@ export default function SettingsView({ restaurantId, restaurantName }) {
           )}
         </div>
 
-        <button
-          className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '15px', fontSize: '1rem', background: saved ? 'var(--success-color)' : undefined }}
-          onClick={handleSave}
-        >
-          <Save size={18} /> {saved ? '¡Guardado!' : 'Guardar Cambios'}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+          <button
+            className="btn-primary"
+            style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '15px', fontSize: '1rem', background: saved ? 'var(--success-color)' : undefined }}
+            onClick={handleSave}
+          >
+            <Save size={18} /> {saved ? '¡Guardado!' : 'Guardar Cambios'}
+          </button>
+          
+          <button
+            onClick={onLogout}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '15px', fontSize: '1rem', background: 'transparent', border: '2px solid #e74c3c', color: '#e74c3c', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            <Lock size={18} /> Cerrar Sesión
+          </button>
+        </div>
       </div>
     </div>
   );
