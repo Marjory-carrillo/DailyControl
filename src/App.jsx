@@ -216,12 +216,12 @@ import { supabase } from './lib/supabaseClient';
 
 export default function App() {
   const [session, setSession] = useState(() => {
+    // Limpiar claves del sistema anterior
+    localStorage.removeItem('appRole');
     const saved = localStorage.getItem('appSession');
-    if (saved) return JSON.parse(saved);
-    // Legacy fallback
-    const oldRole = localStorage.getItem('appRole');
-    if (oldRole === 'restaurant') return { role: 'admin' };
-    if (oldRole === 'delivery') return { role: 'repartidor' };
+    if (saved) {
+      try { return JSON.parse(saved); } catch { return null; }
+    }
     return null;
   });
 
