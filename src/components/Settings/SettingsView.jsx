@@ -51,7 +51,7 @@ const ALL_TABS = [
 ];
 
 export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
-  const { config, setConfig, meseros, addMesero, deleteMesero } = useApp();
+  const { config, setConfig } = useApp();
   const [form, setForm] = useState({ 
     ...config,
     protectedTabs: config.protectedTabs ?? ['dashboard', 'menu', 'settings', 'caja', 'turno'],
@@ -64,7 +64,7 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
   const backupImportRef = useRef();
   const [backupMsg, setBackupMsg] = useState(null); // { type: 'success'|'error', text }
   
-  const [newMesero, setNewMesero] = useState({ name: '', pin: '' });
+
   const [newTable, setNewTable] = useState('');
 
   const handleChange = (e) => {
@@ -294,65 +294,6 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
 
 
 
-        {/* Meseros Management */}
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <Users size={18} color="var(--text-light)" />
-            <span style={{ fontWeight: '700', color: 'var(--text-dark)' }}>Cuentas de Meseros</span>
-          </div>
-          <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
-            Si registras meseros aquí, el sistema pedirá seleccionar uno ingresando su PIN antes de cobrar cualquier orden.
-          </p>
-          
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <input
-              style={{ ...inputStyle, flex: 2 }}
-              placeholder="Nombre del Mesero"
-              value={newMesero.name}
-              onChange={e => setNewMesero({ ...newMesero, name: e.target.value })}
-            />
-            <input
-              style={{ ...inputStyle, flex: 1, letterSpacing: '4px', textAlign: 'center' }}
-              placeholder="PIN (4 dig)"
-              type="password"
-              maxLength={4}
-              value={newMesero.pin}
-              onChange={e => setNewMesero({ ...newMesero, pin: e.target.value.replace(/[^0-9]/g, '') })}
-            />
-            <button
-              className="btn-primary"
-              style={{ padding: '0 20px', borderRadius: '10px' }}
-              onClick={() => {
-                if (newMesero.name && newMesero.pin.length === 4) {
-                  addMesero(newMesero);
-                  setNewMesero({ name: '', pin: '' });
-                }
-              }}
-              disabled={!newMesero.name || newMesero.pin.length !== 4}
-            >
-              Agregar
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-            {meseros.map(m => (
-              <div key={m.id} className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'white' }}>
-                <span style={{ fontWeight: '600' }}>{m.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <span style={{ color: 'var(--text-light)', fontSize: '0.9rem', letterSpacing: '2px' }}>••••</span>
-                  <button onClick={() => deleteMesero(m.id)} style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', display: 'flex' }}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {meseros.length === 0 && (
-              <div style={{ textAlign: 'center', color: 'var(--text-light)', fontSize: '0.9rem', padding: '10px' }}>
-                No hay meseros registrados. El POS no pedirá PIN.
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Tables Management */}
         <div style={sectionStyle}>

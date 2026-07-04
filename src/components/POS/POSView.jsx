@@ -10,7 +10,7 @@ import { ShoppingCart, Search, X, ClipboardList, UtensilsCrossed } from 'lucide-
 import OpenAccountsModal from './OpenAccountsModal';
 import KitchenView from '../Kitchen/KitchenView';
 
-export default function POSView() {
+export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
   const { addOrder } = useOrders();
@@ -218,13 +218,14 @@ export default function POSView() {
         {/* Cart view */}
         {mobileView === 'cart' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <CartSidebar
+             <CartSidebar
               cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart}
               onCheckout={handleCheckout} loadedAccount={loadedAccount}
               onCloseAccount={() => { setCart([]); setOpenAccountId(null); setLoadedAccount(null); setMobileView('menu'); }}
               fullHeight
               activePersona={activePersona}
               onSetActivePersona={setActivePersona}
+              employeeInfo={employeeInfo}
             />
           </div>
         )}
@@ -281,6 +282,7 @@ export default function POSView() {
         onCloseAccount={() => { setCart([]); setOpenAccountId(null); setLoadedAccount(null); }}
         activePersona={activePersona}
         onSetActivePersona={setActivePersona}
+        employeeInfo={employeeInfo}
       />
 
       {showOpenAccounts && (

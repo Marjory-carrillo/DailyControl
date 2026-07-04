@@ -3,8 +3,8 @@ import { Trash2, Plus, Minus, Printer, Tag, Bike, MapPin, Phone, UserCircle2, X,
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 
-export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona }) {
-  const { config, meseros } = useApp();
+export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
+  const { config } = useApp();
   const showToast = useToast();
   const [note, setNote] = useState('');
   const [discount, setDiscount] = useState('');
@@ -46,19 +46,14 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
     }
   }, [cart.length]);
 
-  // Waiter modal state
-  const [showMeseroModal, setShowMeseroModal] = useState(false);
-  const [selectedMesero, setSelectedMesero] = useState(null);
-  const [meseroPin, setMeseroPin] = useState('');
-  const [actionType, setActionType] = useState('checkout');
-
   const handleAction = (type) => {
     executeAction(type, null);
   };
 
   const executeAction = (type, meseroName) => {
+    const finalMesero = meseroName || employeeInfo?.name || null;
     const deliveryInfo = isDelivery ? { colonia: deliveryColonia, calle: deliveryCalle, numero: deliveryNumero, phone: deliveryPhone, clientName: deliveryClientName } : null;
-    onCheckout(note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, isDelivery ? null : tableNumber, type);
+    onCheckout(note, discountAmount, total, paymentMethod, deliveryInfo, finalMesero, isDelivery ? null : tableNumber, type);
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -292,45 +287,6 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
           </button>
         )}
       </div>
-
-      {/* Mesero PIN Modal */}
-      {showMeseroModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-panel" style={{ background: 'white', padding: '24px', borderRadius: '20px', width: '340px', maxWidth: '90vw', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h2 style={{ margin: 0, textAlign: 'center', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-              <UserCircle2 size={22} color="var(--primary-color)" /> Autorizar
-            </h2>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)', textAlign: 'center' }}>Selecciona tu perfil e ingresa tu PIN.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {meseros.map(m => (
-                <button key={m.id} onClick={() => setSelectedMesero(m)} style={{
-                  padding: '10px', borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600', fontSize: '0.9rem',
-                  border: selectedMesero?.id === m.id ? '2px solid var(--primary-color)' : '1px solid rgba(0,0,0,0.1)',
-                  background: selectedMesero?.id === m.id ? 'rgba(255,107,107,0.05)' : 'rgba(0,0,0,0.02)',
-                  color: selectedMesero?.id === m.id ? 'var(--primary-color)' : 'var(--text-dark)',
-                }}>{m.name}</button>
-              ))}
-            </div>
-            {selectedMesero && (
-              <input type="password" maxLength={4} autoFocus placeholder="PIN (4 dígitos)" value={meseroPin}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setMeseroPin(val);
-                  if (val.length === 4) {
-                    if (val === String(selectedMesero.pin || '').trim()) { setShowMeseroModal(false); executeAction(actionType, selectedMesero.name); }
-                    else { showToast('PIN Incorrecto', 'error'); setMeseroPin(''); }
-                  }
-                }}
-                style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.2rem', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.15)', outline: 'none' }}
-              />
-            )}
-            <button onClick={() => setShowMeseroModal(false)}
-              style={{ padding: '12px', borderRadius: '12px', border: 'none', background: 'rgba(0,0,0,0.05)', color: 'var(--text-light)', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit' }}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

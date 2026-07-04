@@ -60,7 +60,7 @@ export default function MeseroView({ onLogout, employeeInfo }) {
 
       {/* Main content */}
       <main className="glass-panel app-main">
-        {activeTab === 'pos'   && <POSView />}
+        {activeTab === 'pos'   && <POSView employeeInfo={employeeInfo} />}
         {activeTab === 'turno' && <TurnoView />}
       </main>
 

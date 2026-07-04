@@ -74,7 +74,7 @@ function AppShell({ onLogout, session }) {
 
       {/* ── Main Content ── */}
       <main className="glass-panel app-main">
-        {activeTab === 'pos'       && <POSView />}
+        {activeTab === 'pos'       && <POSView employeeInfo={session?.employeeInfo} />}
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'caja'      && <CajaChicaView />}
         {activeTab === 'finanzas'  && <FinanzasView />}
