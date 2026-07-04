@@ -1,9 +1,9 @@
 import React from 'react';
 import { useOrders } from '../../context/OrdersContext';
-import { MapPin, CheckCircle2, Navigation } from 'lucide-react';
+import { MapPin, CheckCircle2, Navigation, LogOut } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
-export default function DeliveryView() {
+export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
   const { addToast } = useToast();
 
@@ -40,9 +40,14 @@ export default function DeliveryView() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', height: '100%', overflowY: 'auto' }}>
-      <h2 style={{ marginBottom: '20px', textAlign: 'center', color: 'var(--text-dark)' }}>
-        🛵 Pedidos para Entregar
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>
+          🛵 Pedidos
+        </h2>
+        <button onClick={onLogout} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-light)', fontWeight: 'bold' }}>
+          <LogOut size={18} /> Salir
+        </button>
+      </div>
 
       {deliveryOrders.length === 0 ? (
         <div className="glass-panel" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-light)' }}>

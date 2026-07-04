@@ -290,6 +290,11 @@ export default function App() {
     setRole(selectedRole);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('appRole');
+    setRole(null);
+  };
+
   if (!role) {
     return <RoleSelector onSelectRole={handleSelectRole} />;
   }
@@ -299,7 +304,7 @@ export default function App() {
       <OrdersProvider>
         <FinanzasProvider>
           <ToastProvider>
-            {role === 'delivery' ? <DeliveryView /> : <AppShell />}
+            {role === 'delivery' ? <DeliveryView onLogout={handleLogout} /> : <AppShell />}
           </ToastProvider>
         </FinanzasProvider>
       </OrdersProvider>
