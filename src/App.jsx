@@ -19,6 +19,9 @@ import MeseroView from './components/Staff/MeseroView';
 
 
 function AppShell({ onLogout, session }) {
+  const [activeTab, setActiveTab] = useState('pos');
+  const { config } = useApp();
+
   const handleTabClick = (tab) => {
     setActiveTab(tab);
   };
@@ -50,7 +53,6 @@ function AppShell({ onLogout, session }) {
         {navTabs.slice(0, 3).map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
-            locked={isPinEnabled && (t.alwaysLocked || config.protectedTabs?.includes(t.id))}
             onClick={() => handleTabClick(t.id)}
           />
         ))}
@@ -60,7 +62,6 @@ function AppShell({ onLogout, session }) {
         {navTabs.slice(3).map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
-            locked={isPinEnabled && (t.alwaysLocked || config.protectedTabs?.includes(t.id))}
             onClick={() => handleTabClick(t.id)}
           />
         ))}
