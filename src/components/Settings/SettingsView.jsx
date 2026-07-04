@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Download, RefreshCw, AlertTriangle } from 'lucide-react';
+import DeliveryEmployees from './DeliveryEmployees';
 
 // ── Backup helpers ────────────────────────────────────────────────────────────
 const BACKUP_KEYS = [
@@ -49,7 +50,7 @@ const ALL_TABS = [
   { id: 'menu',      label: 'Editor de Menú' },
 ];
 
-export default function SettingsView() {
+export default function SettingsView({ restaurantId, restaurantName }) {
   const { config, setConfig, meseros, addMesero, deleteMesero } = useApp();
   const [form, setForm] = useState({ 
     ...config,
@@ -454,6 +455,13 @@ export default function SettingsView() {
             )}
           </div>
         </div>
+
+        {/* Delivery Employees */}
+        {restaurantId && (
+          <div style={sectionStyle}>
+            <DeliveryEmployees restaurantId={restaurantId} restaurantName={restaurantName || 'REP'} />
+          </div>
+        )}
 
         {/* ── Backup & Restore ── */}
         <div style={sectionStyle}>

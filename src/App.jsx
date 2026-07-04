@@ -14,6 +14,7 @@ import CosteoView from './components/Costeo/CosteoView';
 import FinanzasView from './components/Finanzas/FinanzasView';
 import { FinanzasProvider } from './context/FinanzasContext';
 import DeliveryView from './components/Delivery/DeliveryView';
+import MeseroView from './components/Staff/MeseroView';
 
 // Tabs that are ALWAYS protected (settings can never be unlocked)
 const ALWAYS_PROTECTED = ['settings'];
@@ -79,7 +80,7 @@ function PinModal({ onSuccess, onCancel }) {
   );
 }
 
-function AppShell({ onLogout }) {
+function AppShell({ onLogout, session }) {
   const [activeTab, setActiveTab] = useState('pos');
   const [pendingTab, setPendingTab] = useState(null);
   const { config } = useApp();
@@ -159,7 +160,7 @@ function AppShell({ onLogout }) {
         {activeTab === 'caja'      && <CajaChicaView />}
         {activeTab === 'finanzas'  && <FinanzasView />}
         {activeTab === 'menu'      && <MenuEditorView />}
-        {activeTab === 'settings'  && <SettingsView />}
+        {activeTab === 'settings'  && <SettingsView restaurantId={session?.restaurant_id} restaurantName={session?.user?.email?.split('@')[0]} />}
         {activeTab === 'turno'     && <TurnoView />}
         {activeTab === 'costeo'    && <CosteoView />}
       </main>
@@ -252,7 +253,9 @@ export default function App() {
         <FinanzasProvider>
           <ToastProvider>
             {session.role === 'admin' ? (
-              <AppShell onLogout={handleLogout} />
+              <AppShell onLogout={handleLogout} session={session} />
+            ) : session.role === 'mesero' ? (
+              <MeseroView onLogout={handleLogout} employeeInfo={session.employeeInfo} />
             ) : (
               <DeliveryView onLogout={handleLogout} />
             )}
