@@ -15,8 +15,11 @@ export function OrdersProvider({ children, restaurantId }) {
     // Supabase Realtime Subscription
     const channel = supabase
       .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${restaurantId}` }, (payload) => {
-        handleRealtimeEvent(payload);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        const row = payload.eventType === 'DELETE' ? payload.old : payload.new;
+        if (row && row.restaurant_id === restaurantId) {
+          handleRealtimeEvent(payload);
+        }
       })
       .subscribe();
 
