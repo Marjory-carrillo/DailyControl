@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bike, Plus, Trash2, Copy, RefreshCw, User, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { useToast } from '../../context/ToastContext';
+import { useToast, useConfirm } from '../../context/ToastContext';
 
 function generateCode(restaurantName = '', role = 'repartidor') {
   const prefix = restaurantName
@@ -27,6 +27,7 @@ export default function StaffEmployees({ restaurantId, restaurantName }) {
   const [adding, setAdding] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const { addToast } = useToast();
+  const showConfirm = useConfirm();
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -75,7 +76,8 @@ export default function StaffEmployees({ restaurantId, restaurantName }) {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`¿Eliminar a ${name}? Su código dejará de funcionar.`)) return;
+    const confirmed = await showConfirm(`¿Eliminar a ${name}? Su código dejará de funcionar.`);
+    if (!confirmed) return;
     const { error } = await supabase.from('employees').delete().eq('id', id);
     if (!error) {
       setEmployees(prev => prev.filter(e => e.id !== id));
@@ -84,7 +86,8 @@ export default function StaffEmployees({ restaurantId, restaurantName }) {
   };
 
   const handleRegenerateCode = async (employee) => {
-    if (!window.confirm(`¿Generar nuevo código para ${employee.name}? El anterior dejará de funcionar.`)) return;
+    const confirmed = await showConfirm(`¿Generar nuevo código para ${employee.name}? El anterior dejará de funcionar.`);
+    if (!confirmed) return;
     const newCode = generateCode(restaurantName, employee.role);
     const { data, error } = await supabase
       .from('employees')

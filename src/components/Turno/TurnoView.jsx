@@ -77,13 +77,15 @@ export default function TurnoView() {
     
     const realCash = parseFloat(efectivoReal) || 0;
     const totalVentas = shift.ventasEfectivo + shift.ventasTarjeta + shift.ventasTransferencia;
-    const efectivoEsperado = shift.fondoInicial + shift.ventasEfectivo;
+    const totalEnvios = shift.ventasEnvios || 0;
+    const efectivoEsperado = shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0);
     const diferencia = realCash - efectivoEsperado;
 
     const closedShift = {
       ...shift,
       closedAt: new Date().toISOString(),
       totalVentas,
+      totalEnvios,
       efectivoEsperado,
       efectivoReal: realCash,
       diferencia,
@@ -197,6 +199,10 @@ export default function TurnoView() {
               <span>Transferencias:</span>
               <span>+ {formatMoney(shift.ventasTransferencia)}</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f39c12' }}>
+              <span>Envíos Recaudados:</span>
+              <span>+ {formatMoney(shift.ventasEnvios)}</span>
+            </div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.03)', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
@@ -206,7 +212,7 @@ export default function TurnoView() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
               <span>Efectivo Físico Esperado:</span>
-              <span>{formatMoney(shift.fondoInicial + shift.ventasEfectivo)}</span>
+              <span>{formatMoney(shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0))}</span>
             </div>
             
             <div style={{ marginTop: '15px', borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '15px' }}>
@@ -221,9 +227,9 @@ export default function TurnoView() {
                 style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'white', fontFamily: 'inherit', fontSize: '1.1rem', outline: 'none', color: 'var(--primary-color)', fontWeight: 'bold' }}
               />
               {efectivoReal !== '' && (
-                <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '1.05rem', color: (parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo)) >= 0 ? 'var(--success-color)' : 'var(--primary-color)' }}>
-                  Diferencia: {formatMoney(parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo))} 
-                  {parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo) >= 0 ? ' (Sobrante/Exacto)' : ' (Faltante)'}
+                <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '1.05rem', color: (parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0))) >= 0 ? 'var(--success-color)' : 'var(--primary-color)' }}>
+                  Diferencia: {formatMoney(parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0)))} 
+                  {parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0)) >= 0 ? ' (Sobrante/Exacto)' : ' (Faltante)'}
                 </div>
               )}
             </div>
@@ -254,6 +260,11 @@ export default function TurnoView() {
                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--success-color)' }}>
                       Ventas: {formatMoney(h.totalVentas)}
                     </div>
+                    {h.totalEnvios > 0 && (
+                      <div style={{ fontSize: '0.85rem', color: '#f39c12', fontWeight: '600' }}>
+                        Envíos: {formatMoney(h.totalEnvios)}
+                      </div>
+                    )}
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '4px' }}>
                       Dif: {formatMoney(h.diferencia || 0)}
                     </div>

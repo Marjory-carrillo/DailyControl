@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, X, Clock, Trash2 } from 'lucide-react';
+import { useConfirm } from '../../context/ToastContext';
 
 export default function OpenAccountsModal({ onClose, onLoadAccount, onDeleteAccount }) {
   const [accounts, setAccounts] = useState([]);
+  const showConfirm = useConfirm();
 
   useEffect(() => {
     setAccounts(JSON.parse(localStorage.getItem('openAccounts') || '[]'));
   }, []);
 
-  const handleDelete = (id) => {
-    if(!window.confirm('¿Seguro que deseas eliminar esta cuenta sin cobrarla?')) return;
+  const handleDelete = async (id) => {
+    const confirmed = await showConfirm('¿Seguro que deseas eliminar esta cuenta sin cobrarla?');
+    if (!confirmed) return;
     const filtered = accounts.filter(a => a.id !== id);
     setAccounts(filtered);
     localStorage.setItem('openAccounts', JSON.stringify(filtered));

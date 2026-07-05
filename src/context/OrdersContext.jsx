@@ -60,11 +60,48 @@ export function OrdersProvider({ children, restaurantId }) {
         }
       }
     } else if (payload.eventType === 'UPDATE') {
+      const oldOrder = orders.find(o => o.id === payload.new.id);
       setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
+      
+      if (payload.new.delivery && payload.new.status === 'entregado' && (!oldOrder || oldOrder.status !== 'entregado')) {
+        const currentShiftStr = localStorage.getItem('currentShift');
+        if (currentShiftStr) {
+          const shift = JSON.parse(currentShiftStr);
+          shift.processedDeliveries = shift.processedDeliveries || [];
+          if (!shift.processedDeliveries.includes(payload.new.id)) {
+            shift.processedDeliveries.push(payload.new.id);
+            
+            const deliveryFee = parseFloat(payload.new.delivery.deliveryFee) || 0;
+            const foodTotal = (parseFloat(payload.new.total) || 0) - deliveryFee;
+            const method = payload.new.paymentMethod || 'Efectivo';
+            
+            shift.orders = (shift.orders || 0) + 1;
+            
+            if (method === 'Efectivo') {
+              shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
+              shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
+            } else if (method === 'Tarjeta') {
+              shift.ventasTarjeta = (shift.ventasTarjeta || 0) + foodTotal;
+              shift.enviosTarjeta = (shift.enviosTarjeta || 0) + deliveryFee;
+            } else if (method === 'Transferencia') {
+              shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
+              shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
+            }
+            
+            shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
+            localStorage.setItem('currentShift', JSON.stringify(shift));
+            window.dispatchEvent(new Event('storage'));
+          }
+        }
+      }
     } else if (payload.eventType === 'DELETE') {
       setOrders(prev => prev.filter(o => o.id !== payload.old.id));
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem('orderHistory', JSON.stringify(orders));
+  }, [orders]);
 
   const addOrder = async (orderData) => {
     // Generate a secure UUID in client if DB doesn't automatically default it

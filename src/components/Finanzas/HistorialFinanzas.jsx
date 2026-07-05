@@ -1,9 +1,11 @@
 import React from 'react';
 import { useFinanzas } from '../../context/FinanzasContext';
 import { ArrowUpRight, ArrowDownRight, Trash2 } from 'lucide-react';
+import { useConfirm } from '../../context/ToastContext';
 
 export function HistorialFinanzas() {
   const { transacciones, eliminarTransaccion } = useFinanzas();
+  const showConfirm = useConfirm();
 
   const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
@@ -87,8 +89,9 @@ export function HistorialFinanzas() {
                 </td>
                 <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                   <button 
-                    onClick={() => {
-                      if (window.confirm('¿Seguro que deseas eliminar este registro? Esto recalculará los saldos disponibles.')) {
+                    onClick={async () => {
+                      const confirmed = await showConfirm('¿Seguro que deseas eliminar este registro? Esto recalculará los saldos disponibles.');
+                      if (confirmed) {
                         eliminarTransaccion(tx.id);
                       }
                     }}

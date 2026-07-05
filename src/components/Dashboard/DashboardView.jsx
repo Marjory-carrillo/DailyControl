@@ -8,17 +8,59 @@ import { printTicket } from '../../utils/printTicket';
 const toDateStr = (d) => d.toLocaleDateString('es-MX');
 const todayStr = () => toDateStr(new Date());
 
-const parseDate = (str) => {
+const parseDate = (str, timestamp) => {
+  if (timestamp) {
+    const numericTs = Number(timestamp);
+    if (!isNaN(numericTs)) {
+      const d = new Date(numericTs);
+      if (!isNaN(d.getTime())) return d;
+    } else {
+      const d = new Date(timestamp);
+      if (!isNaN(d.getTime())) return d;
+    }
+  }
   if (!str) return new Date();
-  const [d, m, y] = str.split('/').map(Number);
-  return new Date(y, m - 1, d);
+  if (str instanceof Date) return str;
+
+  // Standard ISO/US parse try
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) return new Date(parsed);
+
+  if (typeof str === 'string') {
+    if (str.includes('-')) {
+      const parts = str.split('-');
+      if (parts[0].length === 4) {
+        const [y, m, d] = parts.map(Number);
+        return new Date(y, m - 1, d);
+      } else {
+        const [d, m, y] = parts.map(Number);
+        return new Date(y, m - 1, d);
+      }
+    }
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        const [y, m, d] = parts.map(Number);
+        return new Date(y, m - 1, d);
+      }
+      // default: d/m/y (es-MX)
+      const [d, m, y] = parts.map(Number);
+      return new Date(y, m - 1, d);
+    }
+  }
+  return new Date();
 };
 
-const isDateInRange = (dateStr, startStr, endStr) => {
-  const d = parseDate(dateStr).getTime();
+const isDateInRange = (dateStr, startStr, endStr, timestamp) => {
+  const d = parseDate(dateStr, timestamp).getTime();
   const s = parseDate(startStr).setHours(0,0,0,0);
   const e = parseDate(endStr).setHours(23,59,59,999);
   return d >= s && d <= e;
+};
+
+const getStandardDateStr = (dateStr, timestamp) => {
+  const d = parseDate(dateStr, timestamp);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 };
 
 const getStartOfWeek = () => {
@@ -35,16 +77,22 @@ const getStartOfMonth = () => {
 
 function exportToCSV(orders, cajaMovements, dateLabel) {
   // Sales sheet
-  const header = ['#Orden', 'Hora', 'Tipo', 'Total', 'Método de Pago', 'Mesero', 'Estado'];
-  const rows = orders.map(o => [
-    `#${o.id}`,
-    o.time || '',
-    o.delivery ? 'Domicilio' : 'Local',
-    `$${(parseFloat(o.total) || 0).toFixed(2)}`,
-    o.paymentMethod || 'Efectivo',
-    o.mesero || '-',
-    o.status === 'ready' ? 'Listo' : o.status === 'completed' ? 'Entregado' : 'Pendiente',
-  ]);
+  const header = ['#Orden', 'Hora', 'Tipo', 'Total Comida', 'Costo Envío', 'Total Completo', 'Método de Pago', 'Mesero', 'Estado'];
+  const rows = orders.map(o => {
+    const deliveryFee = parseFloat(o.delivery?.deliveryFee) || 0;
+    const foodTotal = (parseFloat(o.total) || 0) - deliveryFee;
+    return [
+      `#${o.id}`,
+      o.time || '',
+      o.delivery ? 'Domicilio' : 'Local',
+      `$${foodTotal.toFixed(2)}`,
+      `$${deliveryFee.toFixed(2)}`,
+      `$${(parseFloat(o.total) || 0).toFixed(2)}`,
+      o.paymentMethod || 'Efectivo',
+      o.mesero || '-',
+      o.status === 'ready' ? 'Listo' : o.status === 'completed' ? 'Entregado' : 'Pendiente',
+    ];
+  });
   // Caja chica section
   const cajaHeader = ['', '', '', '', '', '', ''];
   const cajaTitle = ['--- CAJA CHICA ---', '', '', '', '', '', ''];
@@ -73,30 +121,39 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
 
   // Grouping logic
   const allDates = [...new Set([
-    ...orders.map(o => o.date || 'Sin fecha'),
-    ...cajaMovements.map(m => m.date || 'Sin fecha')
+    ...orders.map(o => o.date ? getStandardDateStr(o.date, o.timestamp) : 'Sin fecha'),
+    ...cajaMovements.map(m => m.date ? getStandardDateStr(m.date, m.timestamp) : 'Sin fecha')
   ])].sort((a,b) => parseDate(a) - parseDate(b));
 
   const ordersByDate = {};
-  orders.forEach(o => { (ordersByDate[o.date || 'Sin fecha'] = ordersByDate[o.date || 'Sin fecha'] || []).push(o); });
+  orders.forEach(o => {
+    const stdDate = o.date ? getStandardDateStr(o.date, o.timestamp) : 'Sin fecha';
+    (ordersByDate[stdDate] = ordersByDate[stdDate] || []).push(o);
+  });
 
   const cajaByDate = {};
-  cajaMovements.forEach(m => { (cajaByDate[m.date || 'Sin fecha'] = cajaByDate[m.date || 'Sin fecha'] || []).push(m); });
+  cajaMovements.forEach(m => {
+    const stdDate = m.date ? getStandardDateStr(m.date, m.timestamp) : 'Sin fecha';
+    (cajaByDate[stdDate] = cajaByDate[stdDate] || []).push(m);
+  });
 
   const sectionsHtml = allDates.map(date => {
     const dayOrders = ordersByDate[date] || [];
     const dayCaja = cajaByDate[date] || [];
 
     // Day Stats
-    let dTotal = 0, dEfectivo = 0, dTarjeta = 0, dTrans = 0, dLocal = 0, dDom = 0;
+    let dTotal = 0, dEfectivo = 0, dTarjeta = 0, dTrans = 0, dLocal = 0, dDom = 0, dEnvios = 0;
     dayOrders.forEach(o => {
+      const deliveryFee = parseFloat(o.delivery?.deliveryFee) || 0;
       const t = parseFloat(o.total) || 0;
-      dTotal += t;
+      const foodTotal = t - deliveryFee;
+      dTotal += foodTotal;
+      dEnvios += deliveryFee;
       const m = (o.paymentMethod || 'Efectivo').toLowerCase();
-      if (m === 'efectivo') dEfectivo += t;
-      else if (m === 'tarjeta') dTarjeta += t;
-      else if (m === 'transferencia') dTrans += t;
-      if (o.delivery) dDom += t; else dLocal += t;
+      if (m === 'efectivo') dEfectivo += foodTotal;
+      else if (m === 'tarjeta') dTarjeta += foodTotal;
+      else if (m === 'transferencia') dTrans += foodTotal;
+      if (o.delivery) dDom += foodTotal; else dLocal += foodTotal;
     });
 
     const dCajaIng = dayCaja.filter(m => m.type !== 'egreso').reduce((a, m) => a + m.amount, 0);
@@ -136,6 +193,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
             <strong>Entrega</strong>
             <div>Local: $${dLocal.toFixed(2)}</div>
             <div>Domicilio: $${dDom.toFixed(2)}</div>
+            <div>Envíos: $${dEnvios.toFixed(2)}</div>
           </div>
           <div class="day-summary-card">
             <strong>Caja Chica</strong>
@@ -172,7 +230,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
       .header-sub{text-align:center; color:#555; margin-bottom:30px; border-bottom:1px solid #ddd; padding-bottom:10px;}
       
       h2.global-title{font-size:16px; margin:10px 0; color:#444; border-left:4px solid var(--primary-color); padding-left:10px;}
-      .stats-global{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:40px;}
+      .stats-global{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:40px;}
       .stat-g{border:1px solid #ddd;border-radius:8px;padding:12px;text-align:center; background:#fcfcfc;}
       .stat-g div:first-child{font-size:10px; color:#888; text-transform:uppercase; font-weight:bold;}
       .stat-g .val{font-size:16px;font-weight:bold;color:#e74c3c;margin-top:4px;}
@@ -203,6 +261,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
       <div class="stat-g"><div>Efectivo</div><div class="val" style="color:#10ac84">$${stats.efectivo.toFixed(2)}</div></div>
       <div class="stat-g"><div>Tarjeta</div><div class="val" style="color:#0984e3">$${stats.tarjeta.toFixed(2)}</div></div>
       <div class="stat-g"><div>Transferencia</div><div class="val" style="color:#6c5ce7">$${stats.transferencia.toFixed(2)}</div></div>
+      <div class="stat-g"><div>Envíos</div><div class="val" style="color:#f39c12">$${stats.envios.toFixed(2)}</div></div>
     </div>
 
     ${sectionsHtml}
@@ -259,7 +318,7 @@ export default function DashboardView() {
   // ── filter orders by date range + optional filters
   const filteredOrders = useMemo(() => {
     return allOrders.filter(o => {
-      const inRange = isDateInRange(o.date || '', dateRange.start, dateRange.end);
+      const inRange = isDateInRange(o.date || '', dateRange.start, dateRange.end, o.timestamp);
       const matchMesero = filterMesero === 'Todos' || o.mesero === filterMesero;
       const matchMethod = filterMethod === 'Todos' || (o.paymentMethod || 'Efectivo') === filterMethod;
       return inRange && matchMesero && matchMethod;
@@ -268,15 +327,18 @@ export default function DashboardView() {
 
   // ── stats for filtered orders
   const stats = useMemo(() => {
-    let total = 0, efectivo = 0, tarjeta = 0, transferencia = 0;
+    let total = 0, efectivo = 0, tarjeta = 0, transferencia = 0, envios = 0;
     const productData = {}; // { name: { count, revenue } }
     filteredOrders.forEach(o => {
+      const deliveryFee = parseFloat(o.delivery?.deliveryFee) || 0;
       const t = parseFloat(o.total) || 0;
-      total += t;
+      const foodTotal = t - deliveryFee;
+      total += foodTotal;
+      envios += deliveryFee;
       const m = (o.paymentMethod || 'Efectivo').toLowerCase();
-      if (m === 'efectivo') efectivo += t;
-      else if (m === 'tarjeta') tarjeta += t;
-      else if (m === 'transferencia') transferencia += t;
+      if (m === 'efectivo') efectivo += foodTotal;
+      else if (m === 'tarjeta') tarjeta += foodTotal;
+      else if (m === 'transferencia') transferencia += foodTotal;
       if (Array.isArray(o.items)) {
         o.items.forEach(item => {
           if (item?.name) {
@@ -295,12 +357,12 @@ export default function DashboardView() {
     const topProducts = allProducts.slice(0, 5);
     const totalUnits = allProducts.reduce((s, p) => s + p.count, 0);
     const totalProductRevenue = allProducts.reduce((s, p) => s + p.revenue, 0);
-    return { total, efectivo, tarjeta, transferencia, count: filteredOrders.length, topProducts, allProducts, totalUnits, totalProductRevenue };
+    return { total, efectivo, tarjeta, transferencia, envios, count: filteredOrders.length, topProducts, allProducts, totalUnits, totalProductRevenue };
   }, [filteredOrders]);
 
   // ── caja chica stats for selected range
   const rangeCaja = useMemo(() => {
-    const filtered = cajaMovements.filter(m => isDateInRange(m.date || '', dateRange.start, dateRange.end));
+    const filtered = cajaMovements.filter(m => isDateInRange(m.date || '', dateRange.start, dateRange.end, m.timestamp));
     const ingresos = filtered.filter(m => m.type !== 'egreso').reduce((a, m) => a + m.amount, 0);
     const egresos = filtered.filter(m => m.type === 'egreso').reduce((a, m) => a + m.amount, 0);
     return { items: filtered, ingresos, egresos, saldo: ingresos - egresos };
@@ -402,6 +464,7 @@ export default function DashboardView() {
         <StatCard icon={<DollarSign />} title="Efectivo" value={`$${stats.efectivo.toFixed(2)}`} color="#1dd1a1" />
         <StatCard icon={<CreditCard />} title="Tarjeta" value={`$${stats.tarjeta.toFixed(2)}`} color="#0984e3" />
         <StatCard icon={<Phone />} title="Transferencias" value={`$${stats.transferencia.toFixed(2)}`} color="#6c5ce7" />
+        <StatCard icon={<Bike />} title="Total Envíos" value={`$${stats.envios.toFixed(2)}`} color="#f39c12" />
         <StatCard icon={<ShoppingBag />} title="Órdenes" value={stats.count} color="#ff9f43" />
       </div>
 
@@ -410,8 +473,11 @@ export default function DashboardView() {
         // Group all orders (not just filtered) by date within range
         const salesByDate = {};
         allOrders.forEach(o => {
-          if (o.date && isDateInRange(o.date, dateRange.start, dateRange.end)) {
-            salesByDate[o.date] = (salesByDate[o.date] || 0) + (parseFloat(o.total) || 0);
+          if (o.date) {
+            const stdDate = getStandardDateStr(o.date, o.timestamp);
+            if (isDateInRange(o.date, dateRange.start, dateRange.end, o.timestamp)) {
+              salesByDate[stdDate] = (salesByDate[stdDate] || 0) + (parseFloat(o.total) || 0);
+            }
           }
         });
         const entries = Object.entries(salesByDate).sort((a, b) => parseDate(a[0]) - parseDate(b[0]));

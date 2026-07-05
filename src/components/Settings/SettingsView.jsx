@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Download, RefreshCw, AlertTriangle, Printer } from 'lucide-react';
 import DeliveryEmployees from './DeliveryEmployees';
+import { useConfirm } from '../../context/ToastContext';
 
 // ── Backup helpers ────────────────────────────────────────────────────────────
 const BACKUP_KEYS = [
@@ -52,6 +53,7 @@ const ALL_TABS = [
 
 export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
   const { config, setConfig } = useApp();
+  const showConfirm = useConfirm();
   const [form, setForm] = useState({ 
     ...config,
     protectedTabs: config.protectedTabs ?? ['dashboard', 'menu', 'settings', 'caja', 'turno'],
@@ -416,10 +418,11 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
               type="file"
               accept=".json"
               style={{ display: 'none' }}
-              onChange={e => {
+              onChange={async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                if (!window.confirm('⚠️ Esto reemplazará TODOS tus datos actuales con los del backup. ¿Continuar?')) return;
+                const confirmed = await showConfirm('⚠️ Esto reemplazará TODOS tus datos actuales con los del backup. ¿Continuar?');
+                if (!confirmed) return;
                 importBackup(
                   file,
                   () => { setBackupMsg({ type: 'success', text: '✅ Datos restaurados. Recarga la página para ver los cambios.' }); e.target.value = ''; },

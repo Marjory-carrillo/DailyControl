@@ -1,11 +1,12 @@
 import React from 'react';
 import { useOrders } from '../../context/OrdersContext';
 import { MapPin, CheckCircle2, Navigation, LogOut, RefreshCw } from 'lucide-react';
-import { useToast } from '../../context/ToastContext';
+import { useToast, useConfirm } from '../../context/ToastContext';
 
 export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
   const { addToast } = useToast();
+  const showConfirm = useConfirm();
 
   // Filtrar pedidos que están "listos" o "en_camino" (sin requerir dirección fija)
   const deliveryOrders = orders.filter(
@@ -32,7 +33,8 @@ export default function DeliveryView({ onLogout }) {
   };
 
   const markAsDelivered = async (orderId) => {
-    if (!window.confirm('¿Confirmar entrega completada?')) return;
+    const confirmed = await showConfirm('¿Confirmar entrega completada?');
+    if (!confirmed) return;
     try {
       await updateOrder(orderId, { status: 'entregado' });
       addToast('Pedido entregado con éxito', 'success');
