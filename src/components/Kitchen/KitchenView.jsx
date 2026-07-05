@@ -17,6 +17,12 @@ export default function KitchenView({ onClose, modal = false }) {
   const { config } = useApp();
   const [filter, setFilter] = useState('all'); // 'all' | 'mesa' | 'delivery'
 
+  const getMs = (t) => {
+    if (!t) return 0;
+    const n = Number(t);
+    return isNaN(n) ? new Date(t).getTime() : n;
+  };
+
   // Órdenes en preparación, ordenadas por llegada (más antiguas primero)
   const kitchenOrders = orders
     .filter(o => o.status === 'en_preparacion')
@@ -25,7 +31,7 @@ export default function KitchenView({ onClose, modal = false }) {
       if (filter === 'delivery') return !!o.delivery;
       return true;
     })
-    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    .sort((a, b) => getMs(a.timestamp) - getMs(b.timestamp));
 
   const handleReady = async (order) => {
     try {
@@ -56,15 +62,17 @@ export default function KitchenView({ onClose, modal = false }) {
   };
 
   const timeAgo = (timestamp) => {
-    if (!timestamp) return '';
-    const diff = Math.floor((Date.now() - timestamp) / 60000);
+    const ms = getMs(timestamp);
+    if (!ms) return '';
+    const diff = Math.floor((Date.now() - ms) / 60000);
     if (diff < 1) return 'ahora';
     if (diff === 1) return '1 min';
     return `${diff} min`;
   };
 
   const urgencyColor = (timestamp) => {
-    const diff = Math.floor((Date.now() - (timestamp || Date.now())) / 60000);
+    const ms = getMs(timestamp);
+    const diff = Math.floor((Date.now() - (ms || Date.now())) / 60000);
     if (diff >= 15) return '#f44336';
     if (diff >= 8)  return '#FF9800';
     return '#4CAF50';

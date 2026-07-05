@@ -190,10 +190,6 @@ export default function POSView({ employeeInfo }) {
                   <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }} />
                   {searchTerm && <X size={16} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
                 </div>
-                <button onClick={() => setShowKitchen(true)}
-                  style={{ background: '#FF9800', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
-                  <UtensilsCrossed size={16} /> Cocina
-                </button>
                 <button onClick={() => setShowOpenAccounts(true)}
                   style={{ background: 'var(--primary-color)', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
                   <ClipboardList size={16} /> Ctas
@@ -234,10 +230,6 @@ export default function POSView({ employeeInfo }) {
         {showOpenAccounts && (
           <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
         )}
-        
-        {showKitchen && (
-          <KitchenView onClose={() => setShowKitchen(false)} />
-        )}
       </div>
     );
   }
@@ -253,10 +245,6 @@ export default function POSView({ employeeInfo }) {
               <input type="text" placeholder="Buscar producto por nombre..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' }} />
               {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
             </div>
-            <button onClick={() => setShowKitchen(true)}
-              style={{ background: '#FF9800', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-              <UtensilsCrossed size={18} /> Cocina
-            </button>
             <button onClick={() => setShowOpenAccounts(true)}
               style={{ background: 'var(--primary-color)', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
               <ClipboardList size={18} /> Abiertas
@@ -288,10 +276,6 @@ export default function POSView({ employeeInfo }) {
 
       {showOpenAccounts && (
         <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
-      )}
-      
-      {showKitchen && (
-        <KitchenView onClose={() => setShowKitchen(false)} />
       )}
     </div>
   );
