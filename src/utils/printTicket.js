@@ -75,16 +75,16 @@ export function printTicket(order, config = {}) {
 
   const renderDelivery = () => {
     if (!order.delivery) return '';
-    const { calle, numero, colonia, phone } = order.delivery;
+    const { calle, numero, colonia, phone, clientName } = order.delivery;
     const addressLine = `${calle} ${numero ? '#' + numero : ''}`.trim();
     
     return `
     <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #000; font-size:12px;">
       <strong style="display:block; margin-bottom:4px; font-size:14px;">🛵 ENTREGA A DOMICILIO</strong>
+      ${clientName ? `<strong>Cliente:</strong> ${clientName}<br/>` : ''}
       <strong>Colonia:</strong> ${colonia}<br/>
       <strong>Calle:</strong> ${addressLine}
       ${phone ? `<br/><strong>Tel:</strong> ${phone}` : ''}
-    </div>
     </div>
   `;
   };

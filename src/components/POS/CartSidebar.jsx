@@ -2,10 +2,36 @@ import React, { useState } from 'react';
 import { Trash2, Plus, Minus, Printer, Tag, Bike, MapPin, Phone, UserCircle2, X, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrders } from '../../context/OrdersContext';
 
 export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
   const { config } = useApp();
   const showToast = useToast();
+  const { orders = [] } = useOrders() || {};
+
+  // Extract unique colonies and streets from order history
+  const colonySuggestions = React.useMemo(() => {
+    const list = new Set();
+    orders.forEach(o => {
+      if (o.delivery?.colonia) {
+        const val = o.delivery.colonia.trim();
+        if (val) list.add(val);
+      }
+    });
+    return Array.from(list);
+  }, [orders]);
+
+  const streetSuggestions = React.useMemo(() => {
+    const list = new Set();
+    orders.forEach(o => {
+      if (o.delivery?.calle) {
+        const val = o.delivery.calle.trim();
+        if (val) list.add(val);
+      }
+    });
+    return Array.from(list);
+  }, [orders]);
+
   const [note, setNote] = useState('');
   const [discount, setDiscount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
@@ -290,10 +316,32 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={15} color="var(--text-light)" />
-                <input value={deliveryColonia} onChange={e => setDeliveryColonia(e.target.value)} placeholder="Colonia..." style={{ ...inputStyle, flex: 1 }} />
+                <input 
+                  list="colonia-suggestions"
+                  value={deliveryColonia} 
+                  onChange={e => setDeliveryColonia(e.target.value)} 
+                  placeholder="Colonia..." 
+                  style={{ ...inputStyle, flex: 1 }} 
+                />
+                <datalist id="colonia-suggestions">
+                  {colonySuggestions.map((col, idx) => (
+                    <option key={idx} value={col} />
+                  ))}
+                </datalist>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '23px' }}>
-                <input value={deliveryCalle} onChange={e => setDeliveryCalle(e.target.value)} placeholder="Calle..." style={{ ...inputStyle, flex: 2 }} />
+                <input 
+                  list="calle-suggestions"
+                  value={deliveryCalle} 
+                  onChange={e => setDeliveryCalle(e.target.value)} 
+                  placeholder="Calle..." 
+                  style={{ ...inputStyle, flex: 2 }} 
+                />
+                <datalist id="calle-suggestions">
+                  {streetSuggestions.map((st, idx) => (
+                    <option key={idx} value={st} />
+                  ))}
+                </datalist>
                 <input value={deliveryNumero} onChange={e => setDeliveryNumero(e.target.value)} placeholder="No..." style={{ ...inputStyle, flex: 1 }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
