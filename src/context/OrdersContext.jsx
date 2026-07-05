@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { printKitchenNote } from '../utils/printKitchenNote';
 
 const OrdersContext = createContext();
 
@@ -43,6 +44,18 @@ export function OrdersProvider({ children, restaurantId }) {
   const handleRealtimeEvent = (payload) => {
     if (payload.eventType === 'INSERT') {
       setOrders(prev => [payload.new, ...prev]);
+      
+      // Auto-print kitchen note if enabled on this device and status is 'en_preparacion'
+      if (payload.new.status === 'en_preparacion') {
+        const autoPrint = localStorage.getItem('autoPrintKitchen') === 'true';
+        if (autoPrint) {
+          try {
+            printKitchenNote(payload.new);
+          } catch (e) {
+            console.error('Error auto-printing kitchen note:', e);
+          }
+        }
+      }
     } else if (payload.eventType === 'UPDATE') {
       setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
     } else if (payload.eventType === 'DELETE') {

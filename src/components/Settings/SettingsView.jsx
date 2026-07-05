@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Download, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Download, RefreshCw, AlertTriangle, Printer } from 'lucide-react';
 import DeliveryEmployees from './DeliveryEmployees';
 
 // ── Backup helpers ────────────────────────────────────────────────────────────
@@ -66,6 +66,7 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
   
 
   const [newTable, setNewTable] = useState('');
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(() => localStorage.getItem('autoPrintKitchen') === 'true');
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -290,6 +291,26 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
             <Bike size={18} color="var(--text-light)" />
             Habilitar Módulo "Entrega a Domicilio"
           </label>
+        </div>
+
+        {/* Auto Print Toggle */}
+        <div style={sectionStyle}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '700', color: 'var(--text-dark)' }}>
+            <input
+              type="checkbox"
+              checked={autoPrintEnabled}
+              onChange={e => {
+                setAutoPrintEnabled(e.target.checked);
+                localStorage.setItem('autoPrintKitchen', e.target.checked ? 'true' : 'false');
+              }}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <Printer size={18} color="var(--text-light)" />
+            Imprimir Comandas Automáticamente
+          </label>
+          <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
+            Al activarse, cualquier comanda nueva enviada por los meseros desde otros dispositivos se mandará a imprimir automáticamente en este dispositivo.
+          </p>
         </div>
 
 
