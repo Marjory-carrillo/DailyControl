@@ -68,8 +68,9 @@ export default function POSView({ employeeInfo }) {
     
     try {
       const currentShiftStr = localStorage.getItem('currentShift');
-      if (!currentShiftStr) {
-        addToast('No puedes cobrar o guardar órdenes si no hay un turno abierto.', 'error');
+      // Solo checkout y save requieren turno abierto — prepare (cocina) puede hacerlo cualquier empleado
+      if (!currentShiftStr && actionType !== 'prepare') {
+        addToast('No hay turno abierto. Solo puedes mandar a preparar.', 'error');
         return;
       }
       
@@ -109,12 +110,15 @@ export default function POSView({ employeeInfo }) {
       } else if (actionType === 'checkout') {
         await addOrder(orderData); // Guardar en Supabase
 
-        const shift = JSON.parse(currentShiftStr);
-        shift.orders += 1;
-        if (method === 'Efectivo') shift.ventasEfectivo += total;
-        else if (method === 'Tarjeta') shift.ventasTarjeta += total;
-        else if (method === 'Transferencia') shift.ventasTransferencia += total;
-        localStorage.setItem('currentShift', JSON.stringify(shift));
+        // Actualizar turno local solo si existe (el dispositivo del admin)
+        if (currentShiftStr) {
+          const shift = JSON.parse(currentShiftStr);
+          shift.orders += 1;
+          if (method === 'Efectivo') shift.ventasEfectivo += total;
+          else if (method === 'Tarjeta') shift.ventasTarjeta += total;
+          else if (method === 'Transferencia') shift.ventasTransferencia += total;
+          localStorage.setItem('currentShift', JSON.stringify(shift));
+        }
 
         if (openAccountId) {
           const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
@@ -122,7 +126,7 @@ export default function POSView({ employeeInfo }) {
         }
 
         printTicket(orderData, config);
-        addToast(`Orden #${orderId} cobrada ✓`, 'success');
+        addToast(`Orden cobrada ✓`, 'success');
       } else if (actionType === 'save') {
         const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
         const existingIdx = openAccs.findIndex(a => a.id === orderId);
