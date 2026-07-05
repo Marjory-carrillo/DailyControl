@@ -26,14 +26,28 @@ export default function KitchenView({ onClose }) {
       if (order.delivery) {
         // Delivery: marcar como "listo" → llega al repartidor
         await updateOrder(order.id, { status: 'listo' });
-        addToast(`Orden #${order.id} lista para el repartidor 🛵`, 'success');
+        addToast(`Orden lista para el repartidor 🛵`, 'success');
       } else {
         // Mesa: cobrar → imprimir ticket cliente
         await updateOrder(order.id, { status: 'paid' });
         printTicket(order, config);
-        addToast(`Orden #${order.id} cobrada ✓`, 'success');
+
+        // Registrar en el turno activo
+        const currentShiftStr = localStorage.getItem('currentShift');
+        if (currentShiftStr) {
+          const shift = JSON.parse(currentShiftStr);
+          shift.orders = (shift.orders || 0) + 1;
+          const method = order.paymentMethod || 'Efectivo';
+          if (method === 'Efectivo') shift.ventasEfectivo = (shift.ventasEfectivo || 0) + (order.total || 0);
+          else if (method === 'Tarjeta') shift.ventasTarjeta = (shift.ventasTarjeta || 0) + (order.total || 0);
+          else if (method === 'Transferencia') shift.ventasTransferencia = (shift.ventasTransferencia || 0) + (order.total || 0);
+          localStorage.setItem('currentShift', JSON.stringify(shift));
+        }
+
+        addToast(`Orden cobrada y registrada ✓`, 'success');
       }
     } catch (err) {
+      console.error(err);
       addToast('Error al actualizar orden', 'error');
     }
   };
