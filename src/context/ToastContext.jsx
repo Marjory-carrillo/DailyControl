@@ -133,12 +133,20 @@ export function ToastProvider({ children }) {
 
 export const useToast = () => {
   const ctx = useContext(ToastContext);
-  return ctx?.addToast;
+  const addToastFn = ctx?.addToast;
+  if (addToastFn) {
+    addToastFn.addToast = addToastFn;
+  }
+  return addToastFn;
 };
 
 export const useConfirm = () => {
   const ctx = useContext(ConfirmContext);
-  return ctx?.showConfirm;
+  const showConfirmFn = ctx?.showConfirm;
+  if (showConfirmFn) {
+    showConfirmFn.showConfirm = showConfirmFn;
+  }
+  return showConfirmFn;
 };
 
 

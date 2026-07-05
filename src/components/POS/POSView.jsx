@@ -133,15 +133,15 @@ export default function POSView({ employeeInfo }) {
         
         addToast(`Mesa ${tableNumber || orderId} guardada ✓`, 'success');
       }
-    } catch (err) {
-      console.error(err);
-      addToast(`Error al procesar: ${err.message}`, 'error');
-    } finally {
+
       setCart([]);
       setOpenAccountId(null);
       setLoadedAccount(null);
       setActivePersona('');
       setMobileView('menu');
+    } catch (err) {
+      console.error(err);
+      addToast(`Error al procesar: ${err.message}`, 'error');
     }
   };
 
