@@ -1,15 +1,15 @@
 import React from 'react';
 import { useOrders } from '../../context/OrdersContext';
-import { MapPin, CheckCircle2, Navigation, LogOut } from 'lucide-react';
+import { MapPin, CheckCircle2, Navigation, LogOut, RefreshCw } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
 export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
   const { addToast } = useToast();
 
-  // Filtrar pedidos que están "listos" o "en_camino"
+  // Filtrar pedidos que están "listos" o "en_camino" (sin requerir dirección fija)
   const deliveryOrders = orders.filter(
-    o => o.delivery && o.delivery.address && (o.status === 'listo' || o.status === 'en_camino')
+    o => o.delivery && (o.status === 'listo' || o.status === 'en_camino')
   );
 
   const startRoute = async (order) => {
@@ -23,7 +23,10 @@ export default function DeliveryView({ onLogout }) {
       }
     }
     
-    const destino = encodeURIComponent(order.delivery.address);
+    // Construir dirección robusta para Google Maps
+    const addressStr = order.delivery.address || 
+      `${order.delivery.calle || ''} ${order.delivery.numero || ''}, ${order.delivery.colonia || ''}`.trim();
+    const destino = encodeURIComponent(addressStr);
     const url = `https://www.google.com/maps/dir/?api=1&destination=${destino}&travelmode=driving`;
     window.open(url, '_blank');
   };
@@ -44,9 +47,17 @@ export default function DeliveryView({ onLogout }) {
         <h2 style={{ margin: 0, color: 'var(--text-dark)' }}>
           🛵 Pedidos
         </h2>
-        <button onClick={onLogout} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-light)', fontWeight: 'bold' }}>
-          <LogOut size={18} /> Salir
-        </button>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--primary-color)', fontWeight: 'bold' }}
+          >
+            <RefreshCw size={18} /> Recargar
+          </button>
+          <button onClick={onLogout} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-light)', fontWeight: 'bold' }}>
+            <LogOut size={18} /> Salir
+          </button>
+        </div>
       </div>
 
       {deliveryOrders.length === 0 ? (

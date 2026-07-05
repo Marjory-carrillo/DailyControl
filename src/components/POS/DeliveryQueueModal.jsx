@@ -8,7 +8,7 @@ export default function DeliveryQueueModal({ onClose }) {
   const { addToast } = useToast();
 
   const activeDeliveries = orders.filter(
-    o => o.delivery && o.delivery.address && o.status === 'en_preparacion'
+    o => o.delivery && o.status === 'en_preparacion'
   );
 
   const markAsReady = async (id) => {
@@ -43,7 +43,7 @@ export default function DeliveryQueueModal({ onClose }) {
                 <div>
                   <h3 style={{ margin: '0 0 5px 0' }}>Orden #{order.id}</h3>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)' }}>
-                    📍 {order.delivery.address} {order.delivery.colonia && `(${order.delivery.colonia})`}
+                    📍 {order.delivery.address || `${order.delivery.calle || ''} ${order.delivery.numero || ''}`.trim()} {order.delivery.colonia && `(${order.delivery.colonia})`}
                   </p>
                   <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', fontWeight: 'bold' }}>
                     A cobrar: ${(order.total || 0).toFixed(2)}
