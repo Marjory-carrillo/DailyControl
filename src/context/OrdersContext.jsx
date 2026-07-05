@@ -51,8 +51,15 @@ export function OrdersProvider({ children, restaurantId }) {
   };
 
   const addOrder = async (orderData) => {
-    // Add to supabase
-    const orderWithTenant = { ...orderData, restaurant_id: restaurantId };
+    // Strip the local short id — let Supabase generate a UUID
+    const { id: _localId, ...rest } = orderData;
+    const orderWithTenant = {
+      ...rest,
+      restaurant_id: restaurantId,
+      // Ensure JSONB columns are proper objects (not strings)
+      items: rest.items || [],
+      delivery: rest.delivery || null,
+    };
     const { data, error } = await supabase
       .from('orders')
       .insert([orderWithTenant])
