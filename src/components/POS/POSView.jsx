@@ -6,9 +6,8 @@ import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
 import { printTicket } from '../../utils/printTicket';
 import { printKitchenNote } from '../../utils/printKitchenNote';
-import { ShoppingCart, Search, X, ClipboardList, UtensilsCrossed } from 'lucide-react';
+import { ShoppingCart, Search, X, ClipboardList } from 'lucide-react';
 import OpenAccountsModal from './OpenAccountsModal';
-import KitchenView from '../Kitchen/KitchenView';
 
 export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
@@ -20,7 +19,6 @@ export default function POSView({ employeeInfo }) {
   const [mobileView, setMobileView] = useState('menu');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showOpenAccounts, setShowOpenAccounts] = useState(false);
-  const [showKitchen, setShowKitchen] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
   const [activePersona, setActivePersona] = useState(''); // current persona for adding items
 
@@ -105,8 +103,7 @@ export default function POSView({ employeeInfo }) {
         const prepOrder = { ...orderData, status: 'en_preparacion' };
         await addOrder(prepOrder);
         printKitchenNote(prepOrder);
-        addToast(`Comanda #${orderId} enviada a cocina 🍳`, 'success');
-        setShowKitchen(true); // abrir cocina automáticamente
+        addToast(`Comanda enviada a cocina 🍳`, 'success');
       } else if (actionType === 'checkout') {
         await addOrder(orderData); // Guardar en Supabase
 

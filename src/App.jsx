@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, ChefHat, BarChart3, Receipt, UtensilsCrossed, Settings, Lock, Wallet, ClipboardList, Calculator, TrendingUp, Navigation } from 'lucide-react';
+import { useOrders } from './context/OrdersContext';
+import KitchenView from './components/Kitchen/KitchenView';
 import './index.css';
 
 import { AppProvider, useApp } from './context/AppContext';
@@ -21,14 +23,18 @@ import MeseroView from './components/Staff/MeseroView';
 function AppShell({ onLogout, session }) {
   const [activeTab, setActiveTab] = useState('pos');
   const { config } = useApp();
+  const { orders } = useOrders();
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
   };
 
-  // ── Nav: Mesero removed, Costeo added ──
+  // Contador de órdenes en preparación para el badge de Cocina
+  const kitchenCount = orders.filter(o => o.status === 'en_preparacion').length;
+
   const navTabs = [
     { id: 'pos',       label: 'POS',     icon: <ShoppingCart size={20} /> },
+    { id: 'cocina',    label: 'Cocina',  icon: <UtensilsCrossed size={20} />, badge: kitchenCount },
     { id: 'turno',     label: 'Turno',   icon: <ClipboardList size={20} /> },
     { id: 'caja',      label: 'Caja',    icon: <Wallet size={20} /> },
     { id: 'finanzas',  label: 'Finanzas', icon: <TrendingUp size={20} /> },
@@ -50,7 +56,7 @@ function AppShell({ onLogout, session }) {
           }
         </div>
 
-        {navTabs.slice(0, 3).map(t => (
+        {navTabs.slice(0, 4).map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
             onClick={() => handleTabClick(t.id)}
@@ -59,7 +65,7 @@ function AppShell({ onLogout, session }) {
 
         <div style={{ width: '40px', height: '1px', background: 'rgba(0,0,0,0.1)', margin: '6px 0' }} />
 
-        {navTabs.slice(3).map(t => (
+        {navTabs.slice(4).map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
             onClick={() => handleTabClick(t.id)}
@@ -75,6 +81,7 @@ function AppShell({ onLogout, session }) {
       {/* ── Main Content ── */}
       <main className="glass-panel app-main">
         {activeTab === 'pos'       && <POSView employeeInfo={session?.employeeInfo} />}
+        {activeTab === 'cocina'    && <KitchenView />}
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'caja'      && <CajaChicaView />}
         {activeTab === 'finanzas'  && <FinanzasView />}
@@ -98,7 +105,7 @@ function AppShell({ onLogout, session }) {
   );
 }
 
-function NavItem({ icon, label, active, onClick, compact = false }) {
+function NavItem({ icon, label, active, onClick, compact = false, badge = 0 }) {
   return (
     <button
       onClick={onClick}
@@ -122,6 +129,17 @@ function NavItem({ icon, label, active, onClick, compact = false }) {
     >
       {icon}
       <span className="nav-item-label">{label}</span>
+      {badge > 0 && (
+        <span style={{
+          position: 'absolute', top: compact ? 4 : 6, right: compact ? 6 : 6,
+          background: '#FF9800', color: 'white',
+          borderRadius: '50%', width: '17px', height: '17px',
+          fontSize: '0.65rem', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontWeight: 'bold', lineHeight: 1,
+        }}>
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
     </button>
   );
 }
