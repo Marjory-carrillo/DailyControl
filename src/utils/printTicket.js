@@ -48,6 +48,15 @@ export function printTicket(order, config = {}) {
       `;
     }
     
+    if (order.delivery && order.delivery.deliveryFee > 0) {
+      html += `
+        <div class="row" style="font-weight:normal; font-size:12px; margin-top:4px;">
+          <span>Envío:</span>
+          <span>+$${order.delivery.deliveryFee.toFixed(2)}</span>
+        </div>
+      `;
+    }
+
     html += `
       <div class="total" style="margin-top:8px;">TOTAL: $${order.total.toFixed(2)}</div>
       <div class="row" style="font-size:11px; color:#666; justify-content:flex-end;">

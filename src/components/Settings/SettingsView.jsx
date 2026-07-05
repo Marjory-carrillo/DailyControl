@@ -291,6 +291,24 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
             <Bike size={18} color="var(--text-light)" />
             Habilitar Módulo "Entrega a Domicilio"
           </label>
+          {form.deliveryEnabled && (
+            <div style={{ marginTop: '12px', paddingLeft: '28px' }}>
+              <label style={labelStyle}>Tarifa de Envío Predeterminada ($)</label>
+              <input
+                style={{ ...inputStyle, width: '200px' }}
+                type="number"
+                min="0"
+                step="0.01"
+                name="defaultDeliveryFee"
+                value={form.defaultDeliveryFee || ''}
+                onChange={handleChange}
+                placeholder="Ej: 25.00"
+              />
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '4px', margin: 0 }}>
+                Se sugerirá automáticamente al seleccionar envío a domicilio, con opción de modificarla en la comanda.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Auto Print Toggle */}

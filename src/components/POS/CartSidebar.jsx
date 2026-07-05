@@ -18,6 +18,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
   const [deliveryColonia, setDeliveryColonia] = useState('');
   const [deliveryPhone, setDeliveryPhone] = useState('');
   const [deliveryClientName, setDeliveryClientName] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState(config?.defaultDeliveryFee || 0);
 
   // Track occupied tables
   const [occupiedTables, setOccupiedTables] = useState([]);
@@ -33,15 +34,33 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
       setDiscount(loadedAccount.discount || '');
       setPaymentMethod(loadedAccount.paymentMethod || 'Efectivo');
       setTableNumber(loadedAccount.table || '');
-      setIsDelivery(false);
+      if (loadedAccount.delivery) {
+        setIsDelivery(true);
+        setDeliveryCalle(loadedAccount.delivery.calle || '');
+        setDeliveryNumero(loadedAccount.delivery.numero || '');
+        setDeliveryColonia(loadedAccount.delivery.colonia || '');
+        setDeliveryPhone(loadedAccount.delivery.phone || '');
+        setDeliveryClientName(loadedAccount.delivery.clientName || '');
+        setDeliveryFee(loadedAccount.delivery.deliveryFee || 0);
+      } else {
+        setIsDelivery(false);
+        setDeliveryFee(config?.defaultDeliveryFee || 0);
+      }
     }
   }, [loadedAccount]);
+
+  React.useEffect(() => {
+    if (isDelivery && !loadedAccount) {
+      setDeliveryFee(config?.defaultDeliveryFee || 0);
+    }
+  }, [isDelivery, config?.defaultDeliveryFee, loadedAccount]);
 
   React.useEffect(() => {
     if (cart.length === 0) {
       setNote(''); setDiscount(''); setPaymentMethod('Efectivo');
       setTableNumber(''); setIsDelivery(false);
       setDeliveryCalle(''); setDeliveryNumero(''); setDeliveryColonia(''); setDeliveryPhone(''); setDeliveryClientName('');
+      setDeliveryFee(config?.defaultDeliveryFee || 0);
       if (onSetActivePersona) onSetActivePersona('');
     }
   }, [cart.length]);
@@ -52,13 +71,20 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
 
   const executeAction = (type, meseroName) => {
     const finalMesero = meseroName || employeeInfo?.name || null;
-    const deliveryInfo = isDelivery ? { colonia: deliveryColonia, calle: deliveryCalle, numero: deliveryNumero, phone: deliveryPhone, clientName: deliveryClientName } : null;
+    const deliveryInfo = isDelivery ? { 
+      colonia: deliveryColonia, 
+      calle: deliveryCalle, 
+      numero: deliveryNumero, 
+      phone: deliveryPhone, 
+      clientName: deliveryClientName,
+      deliveryFee: parseFloat(deliveryFee) || 0
+    } : null;
     onCheckout(note, discountAmount, total, paymentMethod, deliveryInfo, finalMesero, isDelivery ? null : tableNumber, type);
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discountAmount = parseFloat(discount) || 0;
-  const total = Math.max(0, subtotal - discountAmount);
+  const total = Math.max(0, subtotal - discountAmount + (isDelivery ? parseFloat(deliveryFee) || 0 : 0));
 
   // Get unique sub-order numbers from cart
   const subOrders = [...new Set(cart.map(i => i.persona).filter(Boolean))].sort();
@@ -188,14 +214,23 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
           <input type="number" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="Descuento $0.00" min="0" style={{ ...inputStyle, flex: 1 }} />
         </div>
 
-        {discountAmount > 0 && (
+        {(discountAmount > 0 || (isDelivery && (parseFloat(deliveryFee) || 0) > 0)) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px 0', borderTop: '1px dashed rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-light)', fontSize: '0.9rem' }}>
-              <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-color)', fontSize: '0.9rem' }}>
-              <span>Descuento</span><span>- ${discountAmount.toFixed(2)}</span>
-            </div>
+            {discountAmount > 0 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                  <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-color)', fontSize: '0.9rem' }}>
+                  <span>Descuento</span><span>- ${discountAmount.toFixed(2)}</span>
+                </div>
+              </>
+            )}
+            {isDelivery && (parseFloat(deliveryFee) || 0) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-dark)', fontSize: '0.9rem' }}>
+                <span>Envío</span><span>+ ${(parseFloat(deliveryFee) || 0).toFixed(2)}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -264,6 +299,19 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Phone size={15} color="var(--text-light)" />
                 <input value={deliveryPhone} onChange={e => setDeliveryPhone(e.target.value)} placeholder="Teléfono" style={{ ...inputStyle, flex: 1 }} />
+              </div>
+              {/* Costo de Envío */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', minWidth: '95px' }}>🛵 Envío ($):</span>
+                <input 
+                  type="number" 
+                  value={deliveryFee} 
+                  onChange={e => setDeliveryFee(e.target.value)} 
+                  placeholder="0.00" 
+                  min="0" 
+                  step="0.01" 
+                  style={{ ...inputStyle, flex: 1 }} 
+                />
               </div>
             </div>
           )}

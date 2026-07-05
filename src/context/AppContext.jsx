@@ -11,6 +11,7 @@ const DEFAULT_CONFIG = {
   ownerPin: '1234',
   deliveryEnabled: false,
   defaultFondo: '',          // Fondo de caja predeterminado
+  defaultDeliveryFee: 0,     // Tarifa de envío predeterminada
   protectedTabs: ['dashboard', 'menu', 'settings', 'caja', 'turno', 'costeo'], // Módulos protegidos
 };
 
