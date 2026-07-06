@@ -143,7 +143,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
     const dayCaja = cajaByDate[date] || [];
 
     // Day Stats
-    let dTotal = 0, dEfectivo = 0, dTarjeta = 0, dTrans = 0, dLocal = 0, dDom = 0, dEnvios = 0;
+    let dTotal = 0, dEfectivo = 0, dTrans = 0, dLocal = 0, dDom = 0, dEnvios = 0;
     dayOrders.forEach(o => {
       const deliveryFee = parseFloat(o.delivery?.deliveryFee) || 0;
       const t = parseFloat(o.total) || 0;
@@ -152,7 +152,6 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
       dEnvios += deliveryFee;
       const m = (o.paymentMethod || 'Efectivo').toLowerCase();
       if (m === 'efectivo') dEfectivo += foodTotal;
-      else if (m === 'tarjeta') dTarjeta += foodTotal;
       else if (m === 'transferencia') dTrans += foodTotal;
       if (o.delivery) dDom += foodTotal; else dLocal += foodTotal;
     });
@@ -186,8 +185,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
           <div class="day-summary-card">
             <strong>Pagos</strong>
             <div>Efectivo: $${dEfectivo.toFixed(2)}</div>
-            <div>Tarjeta: $${dTarjeta.toFixed(2)}</div>
-            <div>Trans: $${dTrans.toFixed(2)}</div>
+            <div>Transferencia: $${dTrans.toFixed(2)}</div>
             <div class="total-line">Ventas: $${dTotal.toFixed(2)}</div>
           </div>
           <div class="day-summary-card">
@@ -260,7 +258,6 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
     <div class="stats-global">
       <div class="stat-g"><div>Total Ventas</div><div class="val">$${stats.total.toFixed(2)}</div></div>
       <div class="stat-g"><div>Efectivo</div><div class="val" style="color:#10ac84">$${stats.efectivo.toFixed(2)}</div></div>
-      <div class="stat-g"><div>Tarjeta</div><div class="val" style="color:#0984e3">$${stats.tarjeta.toFixed(2)}</div></div>
       <div class="stat-g"><div>Transferencia</div><div class="val" style="color:#6c5ce7">$${stats.transferencia.toFixed(2)}</div></div>
       <div class="stat-g"><div>Envíos</div><div class="val" style="color:#f39c12">$${stats.envios.toFixed(2)}</div></div>
     </div>
@@ -337,7 +334,6 @@ export default function DashboardView() {
       envios += deliveryFee;
       const m = (o.paymentMethod || 'Efectivo').toLowerCase();
       if (m === 'efectivo') efectivo += foodTotal;
-      else if (m === 'tarjeta') tarjeta += foodTotal;
       else if (m === 'transferencia') transferencia += foodTotal;
       if (Array.isArray(o.items)) {
         o.items.forEach(item => {
@@ -462,7 +458,6 @@ export default function DashboardView() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <StatCard icon={<DollarSign />} title="Total Ventas" value={`$${stats.total.toFixed(2)}`} color="#e74c3c" />
         <StatCard icon={<DollarSign />} title="Efectivo" value={`$${stats.efectivo.toFixed(2)}`} color="#1dd1a1" />
-        <StatCard icon={<CreditCard />} title="Tarjeta" value={`$${stats.tarjeta.toFixed(2)}`} color="#0984e3" />
         <StatCard icon={<Phone />} title="Transferencias" value={`$${stats.transferencia.toFixed(2)}`} color="#6c5ce7" />
         <StatCard icon={<Bike />} title="Total Envíos" value={`$${stats.envios.toFixed(2)}`} color="#f39c12" />
         <StatCard icon={<ShoppingBag />} title="Órdenes" value={stats.count} color="#ff9f43" />
@@ -598,7 +593,7 @@ export default function DashboardView() {
           <div>
             <p style={{ margin: '0 0 8px 0', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-light)' }}>MÉTODO DE PAGO</p>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {['Todos', 'Efectivo', 'Tarjeta', 'Transferencia'].map(m => (
+              {['Todos', 'Efectivo', 'Transferencia'].map(m => (
                 <button key={m} onClick={() => setFilterMethod(m)} style={{
                   padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600', fontSize: '0.82rem', transition: 'all 0.2s',
                   background: filterMethod === m ? 'var(--primary-color)' : 'rgba(0,0,0,0.04)',

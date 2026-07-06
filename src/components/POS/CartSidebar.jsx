@@ -270,7 +270,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
         <div>
           <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Método de Pago</label>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {['Efectivo', 'Tarjeta', 'Transferencia'].map(method => (
+            {['Efectivo', 'Transferencia'].map(method => (
               <button key={method} onClick={() => setPaymentMethod(method)} style={{
                 flex: 1, padding: '8px 0', fontSize: '0.78rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit',
                 background: paymentMethod === method ? 'var(--primary-color)' : 'transparent',

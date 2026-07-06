@@ -85,9 +85,6 @@ export function OrdersProvider({ children, restaurantId }) {
             if (method === 'Efectivo') {
               shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
               shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-            } else if (method === 'Tarjeta') {
-              shift.ventasTarjeta = (shift.ventasTarjeta || 0) + foodTotal;
-              shift.enviosTarjeta = (shift.enviosTarjeta || 0) + deliveryFee;
             } else if (method === 'Transferencia') {
               shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
               shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;

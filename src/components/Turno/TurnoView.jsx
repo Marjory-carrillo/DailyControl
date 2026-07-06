@@ -40,7 +40,6 @@ export default function TurnoView() {
       fondoInicial: parseFloat(fondoInicial),
       orders: 0,
       ventasEfectivo: 0,
-      ventasTarjeta: 0,
       ventasTransferencia: 0,
     };
     
@@ -76,7 +75,7 @@ export default function TurnoView() {
     if (!confirmed) return;
     
     const realCash = parseFloat(efectivoReal) || 0;
-    const totalVentas = shift.ventasEfectivo + shift.ventasTarjeta + shift.ventasTransferencia;
+    const totalVentas = shift.ventasEfectivo + shift.ventasTransferencia;
     const totalEnvios = shift.ventasEnvios || 0;
     const efectivoEsperado = shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0);
     const diferencia = realCash - efectivoEsperado;
@@ -191,10 +190,6 @@ export default function TurnoView() {
               <span>Ventas Efectivo:</span>
               <span>+ {formatMoney(shift.ventasEfectivo)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3498db' }}>
-              <span>Ventas Tarjeta:</span>
-              <span>+ {formatMoney(shift.ventasTarjeta)}</span>
-            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9b59b6' }}>
               <span>Transferencias:</span>
               <span>+ {formatMoney(shift.ventasTransferencia)}</span>
@@ -208,7 +203,7 @@ export default function TurnoView() {
           <div style={{ background: 'rgba(0,0,0,0.03)', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px' }}>
               <span>Total Ventas:</span>
-              <span>{formatMoney(shift.ventasEfectivo + shift.ventasTarjeta + shift.ventasTransferencia)}</span>
+              <span>{formatMoney(shift.ventasEfectivo + shift.ventasTransferencia)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
               <span>Efectivo Físico Esperado:</span>

@@ -277,6 +277,25 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
           />
         </div>
 
+        {/* Transfer Account */}
+        <div style={sectionStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Banknote size={18} color="var(--text-light)" />
+            <span style={{ fontWeight: '700', color: 'var(--text-dark)' }}>Número de Cuenta para Transferencias</span>
+          </div>
+          <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
+            Si el cliente paga por transferencia, este número aparecerá automáticamente en su ticket.
+          </p>
+          <input
+            style={inputStyle}
+            type="text"
+            name="transferAccount"
+            value={form.transferAccount || ''}
+            onChange={handleChange}
+            placeholder="Ej: CLABE 123456789012345678 o Banco / Cuenta XXXX"
+          />
+        </div>
+
         {/* Delivery Toggle */}
         <div style={sectionStyle}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '700', color: 'var(--text-dark)' }}>

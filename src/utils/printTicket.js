@@ -64,6 +64,16 @@ export function printTicket(order, config = {}) {
       </div>
     `;
     
+    // Mostrar número de cuenta si el pago es por Transferencia
+    if ((order.paymentMethod || '').toLowerCase() === 'transferencia' && config?.transferAccount) {
+      html += `
+        <div style="margin-top:8px; background:#f0f8ff; border:1px solid #bee3f8; border-radius:6px; padding:8px 10px; font-size:12px; text-align:center;">
+          <strong>📲 Cuenta para Transferencia:</strong><br/>
+          <span style="font-weight:bold;">${config.transferAccount}</span>
+        </div>
+      `;
+    }
+    
     return html;
   };
 

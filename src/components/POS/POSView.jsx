@@ -12,7 +12,7 @@ import OpenAccountsModal from './OpenAccountsModal';
 export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder } = useOrders();
+  const { addOrder, orders } = useOrders();
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,7 +73,18 @@ export default function POSView({ employeeInfo }) {
       }
       
       const method = paymentMethod || 'Efectivo';
-      const orderId = openAccountId || Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      
+      // Numeración consecutiva diaria — empieza en #10 cada día
+      let orderId = openAccountId;
+      if (!orderId) {
+        const todayStr = new Date().toLocaleDateString();
+        const todayOrders = orders.filter(o => o.date === todayStr || o.timestamp && new Date(o.timestamp).toLocaleDateString() === todayStr);
+        const maxId = todayOrders.reduce((max, o) => {
+          const num = parseInt(o.id, 10);
+          return !isNaN(num) ? Math.max(max, num) : max;
+        }, 9);
+        orderId = String(maxId + 1);
+      }
       
       const orderData = {
         id: orderId,
