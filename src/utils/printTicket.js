@@ -160,15 +160,15 @@ export function printTicket(order, config = {}) {
         <title>Ticket Orden #${order.id}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 13px; color: #000; width: 300px; margin: 0 auto; }
-          .ticket { padding: 12px 0; }
-          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; line-height: 1.6; margin-bottom: 10px; }
-          .items { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid #ddd; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-          .total { text-align: right; font-weight: bold; font-size: 15px; }
-          .thanks { text-align: center; font-size: 11px; }
-          .cut-line { border: none; border-top: 2px dashed #aaa; margin: 15px 0; position: relative; text-align: center; }
-          .cut-line::after { content: '✂  CORTAR AQUÍ  ✂'; font-size: 10px; color: #aaa; position: absolute; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 0 6px; }
+          body { font-family: monospace; font-size: 12px; color: #000; width: 200px; margin: 0 auto; }
+          .ticket { padding: 8px 0; }
+          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.5; margin-bottom: 8px; }
+          .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #ddd; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+          .total { text-align: right; font-weight: bold; font-size: 13px; }
+          .thanks { text-align: center; font-size: 10px; }
+          .cut-line { border: none; border-top: 2px dashed #aaa; margin: 12px 0; position: relative; text-align: center; }
+          .cut-line::after { content: '✂  CORTAR  ✂'; font-size: 9px; color: #aaa; position: absolute; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 0 4px; }
         </style>
       </head>
       <body>
@@ -187,7 +187,7 @@ export function printTicket(order, config = {}) {
   if (isMobile) {
     // On mobile: create a hidden iframe to print from
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:320px; height:800px;';
+    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:200px; height:800px;';
     document.body.appendChild(iframe);
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     doc.open();
@@ -204,7 +204,7 @@ export function printTicket(order, config = {}) {
     }, 500);
   } else {
     // Desktop: classic window.open approach
-    const printWindow = window.open('', '_blank', 'width=320,height=800');
+    const printWindow = window.open('', '_blank', 'width=220,height=800');
     if (printWindow) {
       printWindow.document.write(ticketHTML);
       printWindow.document.close();

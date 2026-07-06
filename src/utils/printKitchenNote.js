@@ -43,8 +43,8 @@ export function printKitchenNote(order) {
         <title>Comanda #${order.order_number || order.id}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 15px; color: #000; width: 300px; margin: 0 auto; }
-          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+          body { font-family: monospace; font-size: 13px; color: #000; width: 200px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
           .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
           .header .time { font-size: 12px; }
           .badge { text-align: center; font-size: 16px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
@@ -74,7 +74,7 @@ export function printKitchenNote(order) {
 
   if (isMobile) {
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:320px; height:600px;';
+    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:200px; height:600px;';
     document.body.appendChild(iframe);
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     doc.open();
@@ -85,7 +85,7 @@ export function printKitchenNote(order) {
       setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 400);
   } else {
-    const win = window.open('', '_blank', 'width=320,height=600');
+    const win = window.open('', '_blank', 'width=220,height=600');
     if (win) { win.document.write(html); win.document.close(); }
   }
 }
