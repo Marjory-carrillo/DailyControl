@@ -122,15 +122,28 @@ export default function POSView({ employeeInfo }) {
 
       // 'prepare': imprime comanda para cocina + ticket del cliente si es domicilio
       if (actionType === 'prepare') {
-        const prepOrder = { ...orderData, status: 'en_preparacion' };
-        const savedOrder = await addOrder(prepOrder);
-        const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : prepOrder;
-        printKitchenNote(finalOrder);
-        if (deliveryInfo) {
-          // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
-          printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+        if (tableNumber && !deliveryInfo) {
+          // Es una mesa/barra. No va a la cola de cocina, va directo a cuentas abiertas
+          const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
+          const existingIdx = openAccs.findIndex(a => a.id === orderId);
+          if (existingIdx >= 0) openAccs[existingIdx] = orderData;
+          else openAccs.push(orderData);
+          localStorage.setItem('openAccounts', JSON.stringify(openAccs));
+          
+          printKitchenNote(orderData);
+          addToast(`Mesa enviada a Cuentas Abiertas y ticket de pedido impreso ✓`, 'success');
+        } else {
+          // Flujo normal para llevar o domicilio: va a la cola de cocina
+          const prepOrder = { ...orderData, status: 'en_preparacion' };
+          const savedOrder = await addOrder(prepOrder);
+          const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : prepOrder;
+          printKitchenNote(finalOrder);
+          if (deliveryInfo) {
+            // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
+            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+          }
+          addToast(`Comanda enviada a cocina 🍳`, 'success');
         }
-        addToast(`Comanda enviada a cocina 🍳`, 'success');
       } else if (actionType === 'checkout') {
         const savedOrder = await addOrder(orderData); // Guardar en Supabase
         const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : orderData;

@@ -368,19 +368,31 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
 
         {/* Action buttons */}
         {!isDelivery ? (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
-              disabled={cart.length === 0} onClick={() => handleAction('save')}>Guardar</button>
-            <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
-              disabled={cart.length === 0} onClick={() => handleAction('prepare')}>
-              🍳 Preparar
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
+                disabled={cart.length === 0} onClick={() => handleAction('save')}>Guardar</button>
+              <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
+                disabled={cart.length === 0} onClick={() => handleAction('prepare')}>
+                🍳 Preparar
+              </button>
+            </div>
+            <button className="btn-primary" style={{ width: '100%', background: 'var(--success-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '16px', fontSize: '1.05rem' }}
+              disabled={cart.length === 0} onClick={() => handleAction('checkout')}>
+              💵 Cobrar
             </button>
           </div>
         ) : (
-          <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem', background: '#FF9800' }}
-            disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('prepare')}>
-            🛵 Preparar (Domicilio)
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem', background: '#FF9800' }}
+              disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('prepare')}>
+              🛵 Preparar (Domicilio)
+            </button>
+            <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '16px', fontSize: '1.05rem', background: 'var(--success-color)' }}
+              disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('checkout')}>
+              💵 Cobrar (Domicilio)
+            </button>
+          </div>
         )}
       </div>
     </div>
