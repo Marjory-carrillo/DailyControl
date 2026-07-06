@@ -106,14 +106,12 @@ export function OrdersProvider({ children, restaurantId }) {
   }, [orders]);
 
   const addOrder = async (orderData) => {
-    // Generate a secure UUID in client if DB doesn't automatically default it
-    const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substring(2, 9));
+    // Strip out local id field — Supabase will generate the real UUID
+    // But keep order_number as the human-readable display number
     const { id: _localId, ...rest } = orderData;
     const orderWithTenant = {
       ...rest,
-      id: generatedId,
       restaurant_id: restaurantId,
-      // Ensure JSONB columns are proper objects (not strings)
       items: rest.items || [],
       delivery: rest.delivery || null,
     };

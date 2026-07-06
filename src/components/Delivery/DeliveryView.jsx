@@ -84,7 +84,7 @@ export default function DeliveryView({ onLogout }) {
             <div key={order.id} className="glass-panel" style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', borderLeft: order.status === 'en_camino' ? '4px solid #4CAF50' : '4px solid #FF9800' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h3 style={{ margin: 0 }}>Orden #{order.id}</h3>
+                  <h3 style={{ margin: 0 }}>Orden #{order.order_number || order.id}</h3>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{order.time}</span>
                 </div>
                 <div style={{ background: order.status === 'listo' ? '#FFF3E0' : '#E8F5E9', color: order.status === 'listo' ? '#E65100' : '#2E7D32', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>

@@ -14,7 +14,8 @@ export default function DeliveryQueueModal({ onClose }) {
   const markAsReady = async (id) => {
     try {
       await updateOrder(id, { status: 'listo' });
-      addToast(`Orden #${id} lista para repartidor`, 'success');
+      const displayNum = orders.find(o => o.id === id)?.order_number || id;
+      addToast(`Orden #${displayNum} lista para repartidor`, 'success');
     } catch (error) {
       addToast('Error al actualizar la orden', 'error');
     }
@@ -41,7 +42,7 @@ export default function DeliveryQueueModal({ onClose }) {
             activeDeliveries.map(order => (
               <div key={order.id} style={{ border: '1px solid rgba(0,0,0,0.1)', padding: '15px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.02)' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 5px 0' }}>Orden #{order.id}</h3>
+                  <h3 style={{ margin: '0 0 5px 0' }}>Orden #{order.order_number || order.id}</h3>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)' }}>
                     📍 {order.delivery.address || `${order.delivery.calle || ''} ${order.delivery.numero || ''}`.trim()} {order.delivery.colonia && `(${order.delivery.colonia})`}
                   </p>

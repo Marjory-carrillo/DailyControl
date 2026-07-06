@@ -76,18 +76,24 @@ export default function POSView({ employeeInfo }) {
       
       // Numeración consecutiva diaria — empieza en #10 cada día
       let orderId = openAccountId;
+      let orderNumber = openAccountId;
       if (!orderId) {
         const todayStr = new Date().toLocaleDateString();
-        const todayOrders = orders.filter(o => o.date === todayStr || o.timestamp && new Date(o.timestamp).toLocaleDateString() === todayStr);
-        const maxId = todayOrders.reduce((max, o) => {
-          const num = parseInt(o.id, 10);
-          return !isNaN(num) ? Math.max(max, num) : max;
+        const todayOrders = orders.filter(o => {
+          const oDate = o.date || (o.timestamp ? new Date(Number(o.timestamp)).toLocaleDateString() : '');
+          return oDate === todayStr;
+        });
+        const maxNum = todayOrders.reduce((max, o) => {
+          const num = parseInt(o.order_number || o.id, 10);
+          return !isNaN(num) && num < 10000 ? Math.max(max, num) : max;
         }, 9);
-        orderId = String(maxId + 1);
+        orderId = undefined; // Let Supabase generate UUID
+        orderNumber = String(maxNum + 1);
       }
       
       const orderData = {
         id: orderId,
+        order_number: orderNumber || orderId,
         items: [...cart],
         subtotal: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         discount: discountAmount || 0,
@@ -109,11 +115,15 @@ export default function POSView({ employeeInfo }) {
         // pero vamos a mantener openAccounts en local para mesas, y checkout en Supabase)
       }
 
-      // 'prepare': imprime comanda para cocina y guarda con status en_preparacion
+      // 'prepare': imprime comanda para cocina + ticket del cliente si es domicilio
       if (actionType === 'prepare') {
         const prepOrder = { ...orderData, status: 'en_preparacion' };
         await addOrder(prepOrder);
         printKitchenNote(prepOrder);
+        if (deliveryInfo) {
+          // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
+          printTicket({ ...prepOrder, id: prepOrder.order_number || prepOrder.id }, config);
+        }
         addToast(`Comanda enviada a cocina 🍳`, 'success');
       } else if (actionType === 'checkout') {
         await addOrder(orderData); // Guardar en Supabase
@@ -128,9 +138,6 @@ export default function POSView({ employeeInfo }) {
           if (method === 'Efectivo') {
             shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
             if (deliveryFee > 0) shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-          } else if (method === 'Tarjeta') {
-            shift.ventasTarjeta = (shift.ventasTarjeta || 0) + foodTotal;
-            if (deliveryFee > 0) shift.enviosTarjeta = (shift.enviosTarjeta || 0) + deliveryFee;
           } else if (method === 'Transferencia') {
             shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
             if (deliveryFee > 0) shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
@@ -145,7 +152,7 @@ export default function POSView({ employeeInfo }) {
           localStorage.setItem('openAccounts', JSON.stringify(openAccs.filter(a => a.id !== openAccountId)));
         }
 
-        printTicket(orderData, config);
+        printTicket({ ...orderData, id: orderData.order_number || orderData.id }, config);
         addToast(`Orden cobrada ✓`, 'success');
       } else if (actionType === 'save') {
         const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');

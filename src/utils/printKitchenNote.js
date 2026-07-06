@@ -40,7 +40,7 @@ export function printKitchenNote(order) {
   const html = `
     <html>
       <head>
-        <title>Comanda #${order.id}</title>
+        <title>Comanda #${order.order_number || order.id}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: monospace; font-size: 15px; color: #000; width: 300px; margin: 0 auto; }
@@ -57,7 +57,7 @@ export function printKitchenNote(order) {
       </head>
       <body>
         <div class="header">
-          <h1>COMANDA #${order.id}</h1>
+          <h1>COMANDA #${order.order_number || order.id}</h1>
           <div class="time">${order.time || new Date().toLocaleTimeString()}</div>
         </div>
         ${renderDestino()}
