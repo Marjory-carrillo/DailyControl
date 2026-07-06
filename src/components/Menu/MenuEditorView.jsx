@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
-import { Plus, Pencil, Trash2, Check, X, UtensilsCrossed } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, UtensilsCrossed, Search } from 'lucide-react';
 
 const EMOJIS = [
   '🌮','🫔','🌯','🥪','🥟','🍔','🌭','🍗','🥩','🍖',
@@ -30,8 +30,14 @@ export default function MenuEditorView() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({ name: '', price: '', image: '🌮', description: '' });
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredProducts = products.filter(p => p.category === activeCategory);
+  const filteredProducts = products.filter(p => {
+    if (searchTerm.trim() !== '') {
+      return p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    return p.category === activeCategory;
+  });
 
   const handleAddCategory = () => {
     if (!newCatName.trim()) return;
@@ -98,6 +104,13 @@ export default function MenuEditorView() {
               <Plus size={15} /> Producto
             </button>
           )}
+        </div>
+
+        {/* Search bar */}
+        <div style={{ position: 'relative', marginBottom: '15px', flexShrink: 0 }}>
+          <Search size={18} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+          <input type="text" placeholder="Buscar producto..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }} />
+          {searchTerm && <X size={16} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
         </div>
 
         {/* Categories — horizontal scroll tabs */}
@@ -233,8 +246,14 @@ export default function MenuEditorView() {
 
       {/* Right: Products panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}><UtensilsCrossed /> Editor de Catálogo</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, gap: '20px' }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0, flexShrink: 0 }}><UtensilsCrossed /> Catálogo</h1>
+          
+          <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+            <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <input type="text" placeholder="Buscar producto..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' }} />
+            {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
+          </div>
           {activeCategory && (
             <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={openAddProduct}>
               <Plus size={16} /> Agregar Producto

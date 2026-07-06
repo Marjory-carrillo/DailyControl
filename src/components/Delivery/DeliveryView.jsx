@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useOrders } from '../../context/OrdersContext';
 import { MapPin, CheckCircle2, Navigation, LogOut, RefreshCw } from 'lucide-react';
 import { useToast, useConfirm } from '../../context/ToastContext';
+import { playChime } from '../../utils/playChime';
 
 export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
@@ -12,6 +13,15 @@ export default function DeliveryView({ onLogout }) {
   const deliveryOrders = orders.filter(
     o => o.delivery && (o.status === 'listo' || o.status === 'en_camino')
   );
+
+  // Sonido de alerta de pedido listo para repartidor
+  const prevDeliveryCount = useRef(deliveryOrders.length);
+  useEffect(() => {
+    if (deliveryOrders.length > prevDeliveryCount.current) {
+      playChime();
+    }
+    prevDeliveryCount.current = deliveryOrders.length;
+  }, [deliveryOrders.length]);
 
   const startRoute = async (order) => {
     // Si estaba listo, lo marcamos como en camino

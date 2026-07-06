@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, DollarSign, ShoppingBag, CreditCard, Phone, Printer, Clock, ClipboardList, Info, Bike, Calendar, Filter, Download, FileText, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useOrders } from '../../context/OrdersContext';
 import { printTicket } from '../../utils/printTicket';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -279,9 +280,9 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
 
 export default function DashboardView() {
   const { config } = useApp();
+  const { orders: allOrders } = useOrders();
 
   // ── state
-  const [allOrders, setAllOrders] = useState([]);
   const [dateRange, setDateRange] = useState({ start: todayStr(), end: todayStr() });
   const [rangeType, setRangeType] = useState('hoy'); // hoy, semana, mes, personalizado
   const [filterMesero, setFilterMesero] = useState('Todos');
@@ -297,10 +298,9 @@ export default function DashboardView() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ── load all orders + caja chica from localStorage, poll every 5s
+  // ── load caja chica from localStorage, poll every 5s
   useEffect(() => {
     const load = () => {
-      setAllOrders(JSON.parse(localStorage.getItem('orderHistory') || '[]'));
       setCajaMovements(JSON.parse(localStorage.getItem('cajaChica') || '[]'));
     };
     load();

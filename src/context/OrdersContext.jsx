@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { printKitchenNote } from '../utils/printKitchenNote';
 
@@ -7,6 +7,11 @@ const OrdersContext = createContext();
 export function OrdersProvider({ children, restaurantId }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const ordersRef = useRef(orders);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -60,7 +65,7 @@ export function OrdersProvider({ children, restaurantId }) {
         }
       }
     } else if (payload.eventType === 'UPDATE') {
-      const oldOrder = orders.find(o => o.id === payload.new.id);
+      const oldOrder = ordersRef.current.find(o => o.id === payload.new.id);
       setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
       
       if (payload.new.delivery && payload.new.status === 'entregado' && (!oldOrder || oldOrder.status !== 'entregado')) {

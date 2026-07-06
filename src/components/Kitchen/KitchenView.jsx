@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle, Bike, UtensilsCrossed, Clock } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
 import { useToast } from '../../context/ToastContext';
 import { printTicket } from '../../utils/printTicket';
 import { useApp } from '../../context/AppContext';
+import { playChime } from '../../utils/playChime';
 
 // Exportamos también el conteo para el badge del nav
 export function useKitchenCount() {
@@ -32,6 +33,15 @@ export default function KitchenView({ onClose, modal = false }) {
       return true;
     })
     .sort((a, b) => getMs(a.timestamp) - getMs(b.timestamp));
+
+  // Sonido de alerta de nueva comanda
+  const prevKitchenCount = useRef(kitchenOrders.length);
+  useEffect(() => {
+    if (kitchenOrders.length > prevKitchenCount.current) {
+      playChime();
+    }
+    prevKitchenCount.current = kitchenOrders.length;
+  }, [kitchenOrders.length]);
 
   const handleReady = async (order) => {
     try {
