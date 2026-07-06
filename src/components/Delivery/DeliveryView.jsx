@@ -5,7 +5,7 @@ import { useToast, useConfirm } from '../../context/ToastContext';
 import { playChime } from '../../utils/playChime';
 
 export default function DeliveryView({ onLogout }) {
-  const { orders, updateOrder } = useOrders();
+  const { orders, updateOrder, registerOrderInShift } = useOrders();
   const { addToast } = useToast();
   const showConfirm = useConfirm();
 
@@ -47,6 +47,10 @@ export default function DeliveryView({ onLogout }) {
     if (!confirmed) return;
     try {
       await updateOrder(orderId, { status: 'entregado' });
+      const order = orders.find(o => o.id === orderId);
+      if (order && registerOrderInShift) {
+        registerOrderInShift({ ...order, status: 'entregado' });
+      }
       addToast('Pedido entregado con éxito', 'success');
     } catch (err) {
       addToast('Error al confirmar', 'error');

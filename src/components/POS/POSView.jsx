@@ -12,7 +12,7 @@ import OpenAccountsModal from './OpenAccountsModal';
 export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder, orders } = useOrders();
+  const { addOrder, orders, registerOrderInShift } = useOrders();
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,15 +73,20 @@ export default function POSView({ employeeInfo }) {
       }
       
       const method = paymentMethod || 'Efectivo';
+      const now = new Date();
+      const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
       // Numeración consecutiva diaria — empieza en #10 cada día
       let orderId = openAccountId;
       let orderNumber = openAccountId;
       if (!orderId) {
-        const todayStr = new Date().toLocaleDateString();
         const todayOrders = orders.filter(o => {
-          const oDate = o.date || (o.timestamp ? new Date(Number(o.timestamp)).toLocaleDateString() : '');
-          return oDate === todayStr;
+          let oDate = o.date;
+          if (o.timestamp) {
+            const d = new Date(Number(o.timestamp));
+            oDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          }
+          return oDate === isoDate;
         });
         const maxNum = todayOrders.reduce((max, o) => {
           const num = parseInt(o.order_number || o.id, 10);
@@ -103,8 +108,8 @@ export default function POSView({ employeeInfo }) {
         delivery: deliveryInfo || null,
         mesero: meseroName || null,
         table: tableNumber || null,
-        time: new Date().toLocaleTimeString(),
-        date: new Date().toLocaleDateString(),
+        time: now.toLocaleTimeString(),
+        date: isoDate,
         timestamp: Date.now(),
         status: actionType === 'save' ? 'open' : (deliveryInfo ? 'en_preparacion' : 'paid'),
       };
@@ -118,33 +123,21 @@ export default function POSView({ employeeInfo }) {
       // 'prepare': imprime comanda para cocina + ticket del cliente si es domicilio
       if (actionType === 'prepare') {
         const prepOrder = { ...orderData, status: 'en_preparacion' };
-        await addOrder(prepOrder);
-        printKitchenNote(prepOrder);
+        const savedOrder = await addOrder(prepOrder);
+        const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : prepOrder;
+        printKitchenNote(finalOrder);
         if (deliveryInfo) {
           // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
-          printTicket({ ...prepOrder, id: prepOrder.order_number || prepOrder.id }, config);
+          printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
         }
         addToast(`Comanda enviada a cocina 🍳`, 'success');
       } else if (actionType === 'checkout') {
-        await addOrder(orderData); // Guardar en Supabase
+        const savedOrder = await addOrder(orderData); // Guardar en Supabase
+        const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : orderData;
 
         // Actualizar turno local solo si existe (el dispositivo del admin)
         if (currentShiftStr) {
-          const shift = JSON.parse(currentShiftStr);
-          shift.orders += 1;
-          const deliveryFee = parseFloat(orderData.delivery?.deliveryFee) || 0;
-          const foodTotal = parseFloat(total || 0) - deliveryFee;
-          
-          if (method === 'Efectivo') {
-            shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
-            if (deliveryFee > 0) shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-          } else if (method === 'Transferencia') {
-            shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
-            if (deliveryFee > 0) shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
-          }
-          if (deliveryFee > 0) shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
-          
-          localStorage.setItem('currentShift', JSON.stringify(shift));
+          registerOrderInShift(finalOrder);
         }
 
         if (openAccountId) {
@@ -152,7 +145,7 @@ export default function POSView({ employeeInfo }) {
           localStorage.setItem('openAccounts', JSON.stringify(openAccs.filter(a => a.id !== openAccountId)));
         }
 
-        printTicket({ ...orderData, id: orderData.order_number || orderData.id }, config);
+        printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
         addToast(`Orden cobrada ✓`, 'success');
       } else if (actionType === 'save') {
         const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');

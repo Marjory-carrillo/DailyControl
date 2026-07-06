@@ -49,6 +49,38 @@ export function OrdersProvider({ children, restaurantId }) {
     setLoading(false);
   };
 
+  const registerOrderInShift = (order) => {
+    const currentShiftStr = localStorage.getItem('currentShift');
+    if (currentShiftStr) {
+      const shift = JSON.parse(currentShiftStr);
+      shift.processedOrders = shift.processedOrders || [];
+      if (!shift.processedOrders.includes(order.id)) {
+        shift.processedOrders.push(order.id);
+        
+        const deliveryFee = parseFloat(order.delivery?.deliveryFee || 0);
+        const foodTotal = (parseFloat(order.total) || 0) - deliveryFee;
+        const method = order.paymentMethod || 'Efectivo';
+        
+        shift.orders = (shift.orders || 0) + 1;
+        
+        if (method === 'Efectivo') {
+          shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
+          shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
+        } else if (method === 'Transferencia') {
+          shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
+          shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
+        } else if (method === 'Tarjeta') {
+          shift.ventasTarjeta = (shift.ventasTarjeta || 0) + foodTotal;
+          shift.enviosTarjeta = (shift.enviosTarjeta || 0) + deliveryFee;
+        }
+        
+        shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
+        localStorage.setItem('currentShift', JSON.stringify(shift));
+        window.dispatchEvent(new Event('storage'));
+      }
+    }
+  };
+
   const handleRealtimeEvent = (payload) => {
     if (payload.eventType === 'INSERT') {
       setOrders(prev => [payload.new, ...prev]);
@@ -64,37 +96,20 @@ export function OrdersProvider({ children, restaurantId }) {
           }
         }
       }
+      
+      // Also register if it's inserted directly as paid or entregado
+      if (payload.new.status === 'paid' || payload.new.status === 'entregado') {
+        registerOrderInShift(payload.new);
+      }
     } else if (payload.eventType === 'UPDATE') {
       const oldOrder = ordersRef.current.find(o => o.id === payload.new.id);
       setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
       
-      if (payload.new.delivery && payload.new.status === 'entregado' && (!oldOrder || oldOrder.status !== 'entregado')) {
-        const currentShiftStr = localStorage.getItem('currentShift');
-        if (currentShiftStr) {
-          const shift = JSON.parse(currentShiftStr);
-          shift.processedDeliveries = shift.processedDeliveries || [];
-          if (!shift.processedDeliveries.includes(payload.new.id)) {
-            shift.processedDeliveries.push(payload.new.id);
-            
-            const deliveryFee = parseFloat(payload.new.delivery.deliveryFee) || 0;
-            const foodTotal = (parseFloat(payload.new.total) || 0) - deliveryFee;
-            const method = payload.new.paymentMethod || 'Efectivo';
-            
-            shift.orders = (shift.orders || 0) + 1;
-            
-            if (method === 'Efectivo') {
-              shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
-              shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-            } else if (method === 'Transferencia') {
-              shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
-              shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
-            }
-            
-            shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
-            localStorage.setItem('currentShift', JSON.stringify(shift));
-            window.dispatchEvent(new Event('storage'));
-          }
-        }
+      const wasPaidOrDelivered = oldOrder && (oldOrder.status === 'paid' || oldOrder.status === 'entregado');
+      const isPaidOrDelivered = payload.new.status === 'paid' || payload.new.status === 'entregado';
+      
+      if (isPaidOrDelivered && !wasPaidOrDelivered) {
+        registerOrderInShift(payload.new);
       }
     } else if (payload.eventType === 'DELETE') {
       setOrders(prev => prev.filter(o => o.id !== payload.old.id));
@@ -160,7 +175,8 @@ export function OrdersProvider({ children, restaurantId }) {
       loading,
       addOrder,
       updateOrder,
-      deleteOrder
+      deleteOrder,
+      registerOrderInShift
     }}>
       {children}
     </OrdersContext.Provider>

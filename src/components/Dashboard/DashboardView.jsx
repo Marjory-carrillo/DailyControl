@@ -6,7 +6,10 @@ import { printTicket } from '../../utils/printTicket';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const toDateStr = (d) => d.toLocaleDateString('es-MX');
+const toDateStr = (d) => {
+  if (!d) d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 const todayStr = () => toDateStr(new Date());
 
 const parseDate = (str, timestamp) => {
@@ -91,7 +94,7 @@ function exportToCSV(orders, cajaMovements, dateLabel) {
       `$${(parseFloat(o.total) || 0).toFixed(2)}`,
       o.paymentMethod || 'Efectivo',
       o.mesero || '-',
-      o.status === 'ready' ? 'Listo' : o.status === 'completed' ? 'Entregado' : 'Pendiente',
+      o.status === 'listo' ? 'Listo' : (o.status === 'entregado' || o.status === 'paid') ? 'Completado' : 'Pendiente',
     ];
   });
   // Caja chica section
@@ -733,8 +736,8 @@ export default function DashboardView() {
                       <span style={{ background: methodColor.bg, color: methodColor.fg, padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700' }}>{method}</span>
                     </td>
                     <td style={{ padding: '11px 14px' }}>{order.mesero || '-'}</td>
-                    <td style={{ padding: '11px 14px', color: order.status === 'completed' ? '#1dd1a1' : '#888' }}>
-                      {order.status === 'ready' ? '✓ Listo' : order.status === 'completed' ? '✓ Entregado' : 'Pendiente'}
+                    <td style={{ padding: '11px 14px', color: (order.status === 'entregado' || order.status === 'paid') ? '#1dd1a1' : '#888' }}>
+                      {order.status === 'listo' ? '✓ Listo' : (order.status === 'entregado' || order.status === 'paid') ? '✓ Completado' : 'Pendiente'}
                     </td>
                     <td style={{ padding: '11px 14px' }}>
                       <button onClick={(e) => { e.stopPropagation(); printTicket(order, config); }}

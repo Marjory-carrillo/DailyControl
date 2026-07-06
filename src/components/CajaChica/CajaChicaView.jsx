@@ -40,6 +40,8 @@ export default function CajaChicaView() {
     if (!currentShift) {
       addToast('Sin turno activo — el movimiento se registrará sin turno.', 'warning');
     }
+    const now = new Date();
+    const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const newMovement = {
       id: Date.now().toString(),
       shiftId,
@@ -47,8 +49,9 @@ export default function CajaChicaView() {
       type: form.type,
       amount: parseFloat(form.amount),
       description: form.description.trim(),
-      date: new Date().toLocaleDateString(),
-      time: new Date().toLocaleTimeString(),
+      date: isoDate,
+      time: now.toLocaleTimeString(),
+      timestamp: Date.now(),
     };
     saveMovements([newMovement, ...movements]);
     setForm({ type: 'ingreso', amount: '', description: '' });
@@ -95,7 +98,12 @@ export default function CajaChicaView() {
       groups[key].push(mov);
     });
     const toMs = d => {
-      try { const [dd, mm, yyyy] = d.split('/'); return new Date(`${yyyy}-${mm}-${dd}`).getTime(); }
+      if (d.includes('-')) return new Date(d).getTime();
+      try { 
+        const [dd, mm, yyyy] = d.split('/'); 
+        if (yyyy) return new Date(`${yyyy}-${mm}-${dd}`).getTime(); 
+        return 0;
+      }
       catch { return 0; }
     };
     return Object.entries(groups).sort(([a], [b]) => toMs(b) - toMs(a));

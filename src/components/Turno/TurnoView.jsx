@@ -22,11 +22,18 @@ export default function TurnoView() {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const current = localStorage.getItem('currentShift');
-    if (current) setShift(JSON.parse(current));
-    
-    const hist = localStorage.getItem('shiftHistory');
-    if (hist) setHistory(JSON.parse(hist));
+    const loadData = () => {
+      const current = localStorage.getItem('currentShift');
+      if (current) setShift(JSON.parse(current));
+      else setShift(null);
+      
+      const hist = localStorage.getItem('shiftHistory');
+      if (hist) setHistory(JSON.parse(hist));
+    };
+
+    loadData();
+    window.addEventListener('storage', loadData);
+    return () => window.removeEventListener('storage', loadData);
   }, []);
 
   const handleOpenShift = (e) => {
@@ -41,10 +48,16 @@ export default function TurnoView() {
       orders: 0,
       ventasEfectivo: 0,
       ventasTransferencia: 0,
+      ventasEnvios: 0,
+      enviosEfectivo: 0,
+      enviosTransferencia: 0,
     };
     
     localStorage.setItem('currentShift', JSON.stringify(newShift));
     setShift(newShift);
+
+    const now = new Date();
+    const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Auto-register fondo inicial in Caja Chica
     const fondoMovement = {
@@ -54,8 +67,9 @@ export default function TurnoView() {
       type: 'ingreso',
       amount: parseFloat(fondoInicial),
       description: `Fondo Inicial — Turno de ${cajero}`,
-      date: new Date().toLocaleDateString(),
-      time: new Date().toLocaleTimeString(),
+      date: isoDate,
+      time: now.toLocaleTimeString(),
+      timestamp: Date.now(),
     };
     const existingCaja = JSON.parse(localStorage.getItem('cajaChica') || '[]');
     localStorage.setItem('cajaChica', JSON.stringify([fondoMovement, ...existingCaja]));

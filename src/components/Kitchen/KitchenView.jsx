@@ -13,7 +13,7 @@ export function useKitchenCount() {
 }
 
 export default function KitchenView({ onClose, modal = false }) {
-  const { orders, updateOrder } = useOrders();
+  const { orders, updateOrder, registerOrderInShift } = useOrders();
   const { addToast } = useToast();
   const { config } = useApp();
   const [filter, setFilter] = useState('all'); // 'all' | 'mesa' | 'delivery'
@@ -54,25 +54,8 @@ export default function KitchenView({ onClose, modal = false }) {
         printTicket(order, config);
 
         // Registrar en turno activo
-        const currentShiftStr = localStorage.getItem('currentShift');
-        if (currentShiftStr) {
-          const shift = JSON.parse(currentShiftStr);
-          shift.orders = (shift.orders || 0) + 1;
-          const method = order.paymentMethod || 'Efectivo';
-          const deliveryFee = parseFloat(order.delivery?.deliveryFee) || 0;
-          const foodTotal = parseFloat(order.total || 0) - deliveryFee;
-          
-          if (method === 'Efectivo') {
-            shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
-            if (deliveryFee > 0) shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-          } else if (method === 'Transferencia') {
-            shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
-            if (deliveryFee > 0) shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
-          }
-          if (deliveryFee > 0) shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
-          
-          localStorage.setItem('currentShift', JSON.stringify(shift));
-        }
+        registerOrderInShift({ ...order, status: 'paid' });
+        
         addToast(`Orden cobrada y registrada ✓`, 'success');
       }
     } catch (err) {
