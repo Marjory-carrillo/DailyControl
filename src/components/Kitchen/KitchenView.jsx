@@ -169,6 +169,9 @@ export default function KitchenView({ onClose, modal = false }) {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: '900', fontSize: '0.95rem', background: 'rgba(0,0,0,0.06)', padding: '2px 6px', borderRadius: '6px' }}>
+                  #{order.order_number || (typeof order.id === 'string' ? order.id.substring(0, 4) : order.id)}
+                </span>
                 {order.delivery
                   ? <Bike size={16} color="#E65100" />
                   : <UtensilsCrossed size={16} color="#2E7D32" />}

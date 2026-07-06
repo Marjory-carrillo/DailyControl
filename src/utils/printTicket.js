@@ -2,6 +2,7 @@ export function printTicket(order, config = {}) {
   const businessName = config?.businessName || 'Mi Negocio';
   const slogan = config?.slogan || '';
   const phone = config?.phone || '';
+  const displayId = order.order_number || order.id;
 
   const renderItems = () => order.items.map(i => `
     <div class="row">
@@ -122,7 +123,7 @@ export function printTicket(order, config = {}) {
         <strong>${businessName.toUpperCase()}</strong>
         ${slogan ? `<br/><span>${slogan}</span>` : ''}
         ${phone ? `<br/><span>Tel: ${phone}</span>` : ''}
-        <br/><span style="margin-top:6px; display:inline-block;">Orden #${order.id} — ${order.time}</span>
+        <br/><span style="margin-top:6px; display:inline-block;">Orden #${displayId} — ${order.time}</span>
       </div>
       ${renderDelivery()}
       ${renderTable()}
@@ -140,7 +141,7 @@ export function printTicket(order, config = {}) {
   const negocioCopy = `
     <div class="ticket">
       <div class="header" style="font-weight:bold;">
-        Orden #${order.id} &nbsp;|&nbsp; ${order.time}
+        Orden #${displayId} &nbsp;|&nbsp; ${order.time}
       </div>
       ${renderDelivery()}
       ${renderTable()}
@@ -157,7 +158,7 @@ export function printTicket(order, config = {}) {
   const ticketHTML = `
     <html>
       <head>
-        <title>Ticket Orden #${order.id}</title>
+        <title>Ticket Orden #${displayId}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: monospace; font-size: 12px; color: #000; width: 200px; margin: 0 auto; }

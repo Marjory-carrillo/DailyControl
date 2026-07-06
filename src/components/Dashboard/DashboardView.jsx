@@ -655,7 +655,7 @@ export default function DashboardView() {
                     <div onClick={() => setExpandedOrder(isExpanded ? null : `m-${i}`)} style={{ padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-dark)' }}>#{order.id}</span>
+                          <span style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-dark)' }}>#{order.order_number || order.id}</span>
                           <span style={{ color: '#888', fontSize: '0.8rem' }}><Clock size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />{order.time}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
@@ -719,7 +719,7 @@ export default function DashboardView() {
                 return (
                   <React.Fragment key={`${order.id}-${i}`}>
                   <tr onClick={() => setExpandedOrder(isExpanded ? null : `d-${i}`)} style={{ borderBottom: isExpanded ? 'none' : '1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa', cursor: 'pointer' }}>
-                    <td style={{ padding: '11px 14px', fontWeight: 'bold' }}>#{order.id}</td>
+                    <td style={{ padding: '11px 14px', fontWeight: 'bold' }}>#{order.order_number || order.id}</td>
                     <td style={{ padding: '11px 14px', color: '#888', whiteSpace: 'nowrap' }}>
                       <Clock size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />{order.time}
                     </td>
