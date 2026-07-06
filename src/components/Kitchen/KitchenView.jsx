@@ -47,6 +47,7 @@ export default function KitchenView({ onClose, modal = false }) {
     try {
       if (order.delivery) {
         await updateOrder(order.id, { status: 'listo' });
+        printTicket(order, config);
         addToast(`Orden lista para el repartidor 🛵`, 'success');
       } else {
         await updateOrder(order.id, { status: 'paid' });
