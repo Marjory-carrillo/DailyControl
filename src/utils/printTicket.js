@@ -138,23 +138,6 @@ export function printTicket(order, config = {}) {
     </div>
   `;
 
-  const negocioCopy = `
-    <div class="ticket">
-      <div class="header" style="font-weight:bold;">
-        Orden #${displayId} &nbsp;|&nbsp; ${order.time}
-      </div>
-      ${renderDelivery()}
-      ${renderTable()}
-      ${renderMesero()}
-      <div class="items">
-        ${renderItems()}
-      </div>
-      ${renderTotals()}
-      ${renderPersonaSummary()}
-      ${renderNote()}
-    </div>
-  `;
-
   const ticketHTML = `
     <html>
       <head>
@@ -168,14 +151,10 @@ export function printTicket(order, config = {}) {
           .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
           .total { text-align: right; font-weight: bold; font-size: 13px; }
           .thanks { text-align: center; font-size: 10px; }
-          .cut-line { border: none; border-top: 2px dashed #aaa; margin: 12px 0; position: relative; text-align: center; }
-          .cut-line::after { content: '✂  CORTAR  ✂'; font-size: 9px; color: #aaa; position: absolute; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 0 4px; }
         </style>
       </head>
       <body>
         ${clienteCopy}
-        <div class="cut-line"></div>
-        ${negocioCopy}
         <script>window.onload = function() { window.print(); }</script>
       </body>
     </html>
