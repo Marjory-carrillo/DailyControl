@@ -82,26 +82,30 @@ export function printKitchenNote(order) {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   if (isMobile) {
-    // Mobile workaround (both Android & iOS): 
-    // Inject print container directly into body and use media query to hide main app.
-    // Bypasses popup blockers and iframe rendering bugs in Chrome/Safari.
+    alert("DEBUG [Kitchen]: Entró a isMobile = true");
     let printContainer = document.getElementById('mobile-print-container');
     if (!printContainer) {
+      alert("DEBUG [Kitchen]: No existe printContainer, creándolo...");
       printContainer = document.createElement('div');
       printContainer.id = 'mobile-print-container';
       printContainer.style.display = 'none';
       document.body.appendChild(printContainer);
+    } else {
+      alert("DEBUG [Kitchen]: Ya existe printContainer");
     }
     
     // Extract body and styles safely
     const bodyContent = safeExtract(html, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
     const stylesContent = safeExtract(html, '<style>', '</style>');
     
+    alert("DEBUG [Kitchen]: bodyContent largo: " + bodyContent.length + ", stylesContent largo: " + stylesContent.length);
+    
     printContainer.innerHTML = `<style>@media print { ${stylesContent} }</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
 
     // Add global style to hide everything else during print (if not already added)
     let globalStyle = document.getElementById('mobile-print-style');
     if (!globalStyle) {
+      alert("DEBUG [Kitchen]: No existe mobile-print-style, creándolo...");
       globalStyle = document.createElement('style');
       globalStyle.id = 'mobile-print-style';
       globalStyle.innerHTML = `
@@ -112,14 +116,21 @@ export function printKitchenNote(order) {
         }
       `;
       document.head.appendChild(globalStyle);
+    } else {
+      alert("DEBUG [Kitchen]: Ya existe mobile-print-style");
     }
 
     setTimeout(() => {
       try {
+        alert("DEBUG [Kitchen]: Llamando a window.print(). Tipo de window.print: " + typeof window.print);
         if (typeof window.print === 'function') {
           window.print();
+          alert("DEBUG [Kitchen]: window.print() ejecutado.");
+        } else {
+          alert("DEBUG [Kitchen]: window.print NO es una función!");
         }
       } catch (err) {
+        alert("DEBUG ERROR [Kitchen]: " + err.message);
         console.error('Failed to trigger native print:', err);
       }
     }, 300);
