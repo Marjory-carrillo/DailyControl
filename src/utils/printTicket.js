@@ -168,35 +168,15 @@ export function printTicket(order, config = {}) {
     </html>
   `;
 
-  const isAndroid = /Android/i.test(navigator.userAgent);
-
-  if (isAndroid) {
-    try {
-      // Encode HTML to Base64 safely handling UTF-8 characters
-      const utf8Bytes = new TextEncoder().encode(ticketHTML);
-      let binary = '';
-      const len = utf8Bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(utf8Bytes[i]);
-      }
-      const base64Html = window.btoa(binary);
-      const intentUrl = `intent:data:text/html;base64,${base64Html}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
-      window.location.href = intentUrl;
-    } catch (err) {
-      alert("Error al enviar a RawBT: " + err.message);
-      console.error(err);
+  try {
+    const printWindow = window.open('', '_blank', 'width=220,height=800');
+    if (printWindow) {
+      printWindow.document.write(ticketHTML);
+      printWindow.document.close();
+    } else {
+      alert("El navegador bloqueó la ventana de impresión. Por favor, permite ventanas emergentes para este sitio.");
     }
-  } else {
-    try {
-      const printWindow = window.open('', '_blank', 'width=220,height=800');
-      if (printWindow) {
-        printWindow.document.write(ticketHTML);
-        printWindow.document.close();
-      } else {
-        alert("El navegador bloqueó la ventana de impresión. Por favor, permite ventanas emergentes para este sitio.");
-      }
-    } catch (err) {
-      console.error('Failed to open print window:', err);
-    }
+  } catch (err) {
+    console.error('Failed to open print window:', err);
   }
 }
