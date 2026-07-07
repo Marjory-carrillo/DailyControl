@@ -130,17 +130,31 @@ export default function POSView({ employeeInfo }) {
           else openAccs.push(orderData);
           localStorage.setItem('openAccounts', JSON.stringify(openAccs));
           
-          printKitchenNote(orderData);
+          try {
+            printKitchenNote(orderData);
+          } catch (printErr) {
+            console.error('Failed to print kitchen note:', printErr);
+          }
           addToast(`Mesa enviada a Cuentas Abiertas y ticket de pedido impreso ✓`, 'success');
         } else {
           // Flujo normal para llevar o domicilio: va a la cola de cocina
           const prepOrder = { ...orderData, status: 'en_preparacion' };
           const savedOrder = await addOrder(prepOrder);
           const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : prepOrder;
-          printKitchenNote(finalOrder);
+          
+          try {
+            printKitchenNote(finalOrder);
+          } catch (printErr) {
+            console.error('Failed to print kitchen note:', printErr);
+          }
+          
           if (deliveryInfo) {
-            // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
-            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+            try {
+              // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
+              printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+            } catch (printErr) {
+              console.error('Failed to print ticket:', printErr);
+            }
           }
           addToast(`Comanda enviada a cocina 🍳`, 'success');
         }
@@ -158,7 +172,11 @@ export default function POSView({ employeeInfo }) {
           localStorage.setItem('openAccounts', JSON.stringify(openAccs.filter(a => a.id !== openAccountId)));
         }
 
-        printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+        try {
+          printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+        } catch (printErr) {
+          console.error('Failed to print ticket:', printErr);
+        }
         addToast(`Orden cobrada ✓`, 'success');
       } else if (actionType === 'save') {
         const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');

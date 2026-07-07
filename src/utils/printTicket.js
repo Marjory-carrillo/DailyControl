@@ -168,6 +168,14 @@ export function printTicket(order, config = {}) {
   // iOS Safari blocks iframe printing, so we use window.open for iOS and Desktop.
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+  function safeExtract(htmlStr, startTag, endTag) {
+    const startIdx = htmlStr.indexOf(startTag);
+    if (startIdx === -1) return '';
+    const endIdx = htmlStr.indexOf(endTag, startIdx + startTag.length);
+    if (endIdx === -1) return htmlStr.substring(startIdx + startTag.length);
+    return htmlStr.substring(startIdx + startTag.length, endIdx);
+  }
+
   if (isMobile) {
     // Mobile workaround (both Android & iOS): 
     // Inject print container directly into body and use media query to hide main app.
@@ -175,9 +183,9 @@ export function printTicket(order, config = {}) {
     const printContainer = document.createElement('div');
     printContainer.id = 'mobile-print-container';
     
-    // Extract body and styles
-    const bodyContent = ticketHTML.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
-    const stylesContent = ticketHTML.split('<style>')[1].split('</style>')[0];
+    // Extract body and styles safely
+    const bodyContent = safeExtract(ticketHTML, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
+    const stylesContent = safeExtract(ticketHTML, '<style>', '</style>');
     
     printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
     document.body.appendChild(printContainer);
@@ -193,7 +201,13 @@ export function printTicket(order, config = {}) {
     document.head.appendChild(globalStyle);
 
     setTimeout(() => {
-      window.print();
+      try {
+        if (typeof window.print === 'function') {
+          window.print();
+        }
+      } catch (err) {
+        console.error('Failed to trigger native print:', err);
+      }
       setTimeout(() => {
         if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
         if (document.head.contains(globalStyle)) document.head.removeChild(globalStyle);
@@ -201,10 +215,14 @@ export function printTicket(order, config = {}) {
     }, 300);
   } else {
     // Desktop: classic window.open approach
-    const printWindow = window.open('', '_blank', 'width=220,height=800');
-    if (printWindow) {
-      printWindow.document.write(ticketHTML);
-      printWindow.document.close();
+    try {
+      const printWindow = window.open('', '_blank', 'width=220,height=800');
+      if (printWindow) {
+        printWindow.document.write(ticketHTML);
+        printWindow.document.close();
+      }
+    } catch (err) {
+      console.error('Failed to open print window:', err);
     }
   }
 }

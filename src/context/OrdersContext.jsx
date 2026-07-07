@@ -157,6 +157,20 @@ export function OrdersProvider({ children, restaurantId }) {
     return data;
   };
 
+  const bulkUpdateOrders = async (ids, updates) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .update(updates)
+      .in('id', ids)
+      .select();
+      
+    if (error) {
+      console.error('Error bulk updating orders:', error);
+      throw error;
+    }
+    return data;
+  };
+
   const deleteOrder = async (id) => {
     const { error } = await supabase
       .from('orders')
@@ -176,7 +190,8 @@ export function OrdersProvider({ children, restaurantId }) {
       addOrder,
       updateOrder,
       deleteOrder,
-      registerOrderInShift
+      registerOrderInShift,
+      bulkUpdateOrders
     }}>
       {children}
     </OrdersContext.Provider>

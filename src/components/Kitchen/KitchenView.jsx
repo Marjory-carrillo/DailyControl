@@ -13,7 +13,7 @@ export function useKitchenCount() {
 }
 
 export default function KitchenView({ onClose, modal = false }) {
-  const { orders, updateOrder, registerOrderInShift } = useOrders();
+  const { orders, updateOrder, registerOrderInShift, bulkUpdateOrders } = useOrders();
   const { addToast } = useToast();
   const { config } = useApp();
   const [filter, setFilter] = useState('all'); // 'all' | 'mesa' | 'delivery'
@@ -43,15 +43,71 @@ export default function KitchenView({ onClose, modal = false }) {
     prevKitchenCount.current = kitchenOrders.length;
   }, [kitchenOrders.length]);
 
+  const handleCleanBacklog = async () => {
+    const ordersToClean = kitchenOrders;
+    if (ordersToClean.length === 0) {
+      addToast('No hay órdenes estancadas en la cocina.', 'info');
+      return;
+    }
+
+    const confirmClean = window.confirm(`¿Estás seguro de que deseas marcar las ${ordersToClean.length} órdenes de la cocina como listas/completadas?`);
+    if (!confirmClean) return;
+
+    try {
+      // Separar por tipo para registrar correctamente
+      const deliveryOrderIds = [];
+      const dineInOrders = [];
+
+      ordersToClean.forEach(order => {
+        if (order.delivery) {
+          deliveryOrderIds.push(order.id);
+        } else {
+          dineInOrders.push(order);
+        }
+      });
+
+      // 1. Bulk update delivery orders to 'listo'
+      if (deliveryOrderIds.length > 0) {
+        await bulkUpdateOrders(deliveryOrderIds, { status: 'listo' });
+      }
+
+      // 2. Bulk update dine-in/mostrador orders to 'paid'
+      if (dineInOrders.length > 0) {
+        const dineInIds = dineInOrders.map(o => o.id);
+        await bulkUpdateOrders(dineInIds, { status: 'paid' });
+        
+        // Registrar en turno activo cada una
+        dineInOrders.forEach(order => {
+          try {
+            registerOrderInShift({ ...order, status: 'paid' });
+          } catch (shiftErr) {
+            console.error("Error registering bulk order in shift:", shiftErr);
+          }
+        });
+      }
+
+      addToast(`Se marcaron ${ordersToClean.length} órdenes como listas ✓`, 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Error al limpiar la cola de cocina', 'error');
+    }
+  };
+
   const handleReady = async (order) => {
+    // 1. Trigger the print dialog synchronously while we still have the user gesture!
+    try {
+      printTicket(order, config);
+    } catch (printErr) {
+      console.error('Failed to print ticket:', printErr);
+    }
+
+    // 2. Perform the database update asynchronously.
     try {
       if (order.delivery) {
         await updateOrder(order.id, { status: 'listo' });
-        printTicket(order, config);
         addToast(`Orden lista para el repartidor 🛵`, 'success');
       } else {
         await updateOrder(order.id, { status: 'paid' });
-        printTicket(order, config);
 
         // Registrar en turno activo
         registerOrderInShift({ ...order, status: 'paid' });
@@ -100,7 +156,7 @@ export default function KitchenView({ onClose, modal = false }) {
           {kitchenOrders.length} en preparación
         </span>
       </div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         {['all', 'mesa', 'delivery'].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
             padding: '5px 12px', borderRadius: '20px', border: 'none',
@@ -111,6 +167,22 @@ export default function KitchenView({ onClose, modal = false }) {
             {f === 'all' ? '📋 Todos' : f === 'mesa' ? '🪑 Mesa' : '🛵 Delivery'}
           </button>
         ))}
+        
+        {kitchenOrders.length > 0 && (
+          <button onClick={handleCleanBacklog} style={{
+            padding: '5px 12px', borderRadius: '20px', border: 'none',
+            cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem',
+            background: '#d32f2f',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}>
+            🧹 Limpiar Cocina ({kitchenOrders.length})
+          </button>
+        )}
+
         {modal && onClose && (
           <button onClick={onClose} style={{
             background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',

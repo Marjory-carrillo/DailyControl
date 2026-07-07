@@ -2,6 +2,14 @@
  * Imprime la comanda para la cocina (nota del taquero).
  * Sin precios, solo artículos, cantidad, notas y destino.
  */
+function safeExtract(htmlStr, startTag, endTag) {
+  const startIdx = htmlStr.indexOf(startTag);
+  if (startIdx === -1) return '';
+  const endIdx = htmlStr.indexOf(endTag, startIdx + startTag.length);
+  if (endIdx === -1) return htmlStr.substring(startIdx + startTag.length);
+  return htmlStr.substring(startIdx + startTag.length, endIdx);
+}
+
 export function printKitchenNote(order) {
   const renderItems = () =>
     order.items
@@ -66,7 +74,7 @@ export function printKitchenNote(order) {
           ${renderItems()}
         </div>
         ${renderNote()}
-        <script>window.onload = function() { window.print(); }<\/script>
+        <script>window.onload = function() { window.print(); }</script>
       </body>
     </html>
   `;
@@ -80,9 +88,9 @@ export function printKitchenNote(order) {
     const printContainer = document.createElement('div');
     printContainer.id = 'mobile-print-container';
     
-    // Extract body and styles
-    const bodyContent = html.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
-    const stylesContent = html.split('<style>')[1].split('</style>')[0];
+    // Extract body and styles safely
+    const bodyContent = safeExtract(html, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
+    const stylesContent = safeExtract(html, '<style>', '</style>');
     
     printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
     document.body.appendChild(printContainer);
@@ -98,7 +106,13 @@ export function printKitchenNote(order) {
     document.head.appendChild(globalStyle);
 
     setTimeout(() => {
-      window.print();
+      try {
+        if (typeof window.print === 'function') {
+          window.print();
+        }
+      } catch (err) {
+        console.error('Failed to trigger native print:', err);
+      }
       setTimeout(() => {
         if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
         if (document.head.contains(globalStyle)) document.head.removeChild(globalStyle);
@@ -106,10 +120,14 @@ export function printKitchenNote(order) {
     }, 300);
   } else {
     // Desktop: classic window.open approach
-    const win = window.open('', '_blank', 'width=220,height=600');
-    if (win) { 
-      win.document.write(html); 
-      win.document.close(); 
+    try {
+      const win = window.open('', '_blank', 'width=220,height=600');
+      if (win) { 
+        win.document.write(html); 
+        win.document.close(); 
+      }
+    } catch (err) {
+      console.error('Failed to open print window:', err);
     }
   }
 }
