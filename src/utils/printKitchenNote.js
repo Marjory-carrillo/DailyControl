@@ -86,14 +86,16 @@ export function printKitchenNote(order) {
   if (isAndroid) {
     alert("DEBUG [Kitchen]: Enviando a impresión mediante iframe (Android)...");
     
-    // Create an iframe to isolate the print document from the main app
+    // Create an iframe and position it off-screen but visible with size
+    // so Chrome lays it out correctly for printing (avoiding blank/loading screens)
     const iframe = document.createElement('iframe');
     iframe.id = 'android-print-iframe';
     iframe.style.position = 'absolute';
-    iframe.style.width = '0px';
-    iframe.style.height = '0px';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '300px';
+    iframe.style.height = '300px';
     iframe.style.border = 'none';
-    iframe.style.visibility = 'hidden';
     document.body.appendChild(iframe);
     
     try {
@@ -102,12 +104,24 @@ export function printKitchenNote(order) {
       doc.write(html);
       doc.close();
       
-      // Auto-remove iframe after 10 seconds
+      // Fallback print trigger from parent after a brief delay
+      setTimeout(() => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }
+        } catch (err) {
+          console.warn("Parent print trigger fallback failed:", err);
+        }
+      }, 500);
+
+      // Auto-remove iframe after 15 seconds
       setTimeout(() => {
         if (document.body.contains(iframe)) {
           document.body.removeChild(iframe);
         }
-      }, 10000);
+      }, 15000);
     } catch (err) {
       alert("DEBUG ERROR [Kitchen Iframe]: " + err.message);
       console.error('Failed to write print iframe:', err);
