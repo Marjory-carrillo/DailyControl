@@ -41,6 +41,7 @@ export function printKitchenNote(order) {
     <html>
       <head>
         <title>Comanda #${order.order_number || order.id}</title>
+        <style>
           @page { margin: 0; size: 58mm auto; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
