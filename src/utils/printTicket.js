@@ -176,7 +176,38 @@ export function printTicket(order, config = {}) {
     return htmlStr.substring(startIdx + startTag.length, endIdx);
   }
 
-  if (isMobile) {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    alert("DEBUG [Ticket]: Enviando a impresión mediante iframe (Android)...");
+    
+    // Create an iframe to isolate the print document from the main app
+    const iframe = document.createElement('iframe');
+    iframe.id = 'android-print-iframe';
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+    
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(ticketHTML);
+      doc.close();
+      
+      // Auto-remove iframe after 10 seconds
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 10000);
+    } catch (err) {
+      alert("DEBUG ERROR [Ticket Iframe]: " + err.message);
+      console.error('Failed to write print iframe:', err);
+    }
+  } else if (isMobile) {
     alert("DEBUG [Ticket] 1: Iniciando...");
     let printContainer = document.getElementById('mobile-print-container');
     if (!printContainer) {

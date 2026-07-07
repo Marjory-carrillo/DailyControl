@@ -81,7 +81,38 @@ export function printKitchenNote(order) {
 
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  if (isMobile) {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    alert("DEBUG [Kitchen]: Enviando a impresión mediante iframe (Android)...");
+    
+    // Create an iframe to isolate the print document from the main app
+    const iframe = document.createElement('iframe');
+    iframe.id = 'android-print-iframe';
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+    
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+      
+      // Auto-remove iframe after 10 seconds
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 10000);
+    } catch (err) {
+      alert("DEBUG ERROR [Kitchen Iframe]: " + err.message);
+      console.error('Failed to write print iframe:', err);
+    }
+  } else if (isMobile) {
     alert("DEBUG [Kitchen] 1: Iniciando...");
     let printContainer = document.getElementById('mobile-print-container');
     if (!printContainer) {
