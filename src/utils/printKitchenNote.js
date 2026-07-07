@@ -42,8 +42,9 @@ export function printKitchenNote(order) {
       <head>
         <title>Comanda #${order.order_number || order.id}</title>
         <style>
+          @page { margin: 0; size: 58mm 2000mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 13px; color: #000; width: 200px; margin: 0 auto; }
+          body { font-family: monospace; font-size: 13px; color: #000; width: 100%; max-width: 200px; margin: 0 auto; padding: 5px; }
           .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
           .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
           .header .time { font-size: 12px; }
@@ -86,8 +87,39 @@ export function printKitchenNote(order) {
       try { iframe.contentWindow.print(); } catch { window.open('').document.write(html); }
       setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 400);
+  } else if (isIOS) {
+    // iOS Safari blocks popups and iframe printing. 
+    // Best workaround: inject content directly into body, print, and remove.
+    const printContainer = document.createElement('div');
+    printContainer.id = 'ios-print-container';
+    
+    // Extract body and styles
+    const bodyContent = html.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
+    const stylesContent = html.split('<style>')[1].split('</style>')[0];
+    
+    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 200px; margin: 0 auto; color: #000;">${bodyContent}</div>`;
+    document.body.appendChild(printContainer);
+
+    // Add global style to hide everything else during print
+    const globalStyle = document.createElement('style');
+    globalStyle.innerHTML = `
+      @media print {
+        body * { visibility: hidden; }
+        #ios-print-container, #ios-print-container * { visibility: visible; }
+        #ios-print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+      }
+    `;
+    document.head.appendChild(globalStyle);
+
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
+        if (document.head.contains(globalStyle)) document.head.removeChild(globalStyle);
+      }, 1000);
+    }, 300);
   } else {
-    // iOS and Desktop: classic window.open approach
+    // Desktop: classic window.open approach
     const win = window.open('', '_blank', 'width=220,height=600');
     if (win) { 
       win.document.write(html); 

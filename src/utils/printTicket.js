@@ -143,8 +143,9 @@ export function printTicket(order, config = {}) {
       <head>
         <title>Ticket Orden #${displayId}</title>
         <style>
+          @page { margin: 0; size: 58mm 2000mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 12px; color: #000; width: 200px; margin: 0 auto; }
+          body { font-family: monospace; font-size: 12px; color: #000; width: 100%; max-width: 200px; margin: 0 auto; padding: 5px; }
           .ticket { padding: 8px 0; }
           .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.5; margin-bottom: 8px; }
           .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #ddd; }
@@ -184,8 +185,39 @@ export function printTicket(order, config = {}) {
       }
       setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 500);
+  } else if (isIOS) {
+    // iOS Safari blocks popups and iframe printing. 
+    // Best workaround: inject content directly into body, print, and remove.
+    const printContainer = document.createElement('div');
+    printContainer.id = 'ios-print-container';
+    
+    // Extract body and styles
+    const bodyContent = ticketHTML.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
+    const stylesContent = ticketHTML.split('<style>')[1].split('</style>')[0];
+    
+    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 200px; margin: 0 auto; color: #000;">${bodyContent}</div>`;
+    document.body.appendChild(printContainer);
+
+    // Add global style to hide everything else during print
+    const globalStyle = document.createElement('style');
+    globalStyle.innerHTML = `
+      @media print {
+        body * { visibility: hidden; }
+        #ios-print-container, #ios-print-container * { visibility: visible; }
+        #ios-print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+      }
+    `;
+    document.head.appendChild(globalStyle);
+
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
+        if (document.head.contains(globalStyle)) document.head.removeChild(globalStyle);
+      }, 1000);
+    }, 300);
   } else {
-    // iOS and Desktop: classic window.open approach
+    // Desktop: classic window.open approach
     const printWindow = window.open('', '_blank', 'width=220,height=800');
     if (printWindow) {
       printWindow.document.write(ticketHTML);
