@@ -164,32 +164,14 @@ export function printTicket(order, config = {}) {
   // On mobile, window.open() often fails or shows blank pages for Android.
   // Use an iframe approach instead for more reliable cross-device printing on Android.
   // iOS Safari blocks iframe printing, so we use window.open for iOS and Desktop.
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  if (isAndroid) {
-    // On Android: create a hidden iframe to print from
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:200px; height:800px;';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(ticketHTML.replace('window.print();', ''));
-    doc.close();
-    setTimeout(() => {
-      try {
-        iframe.contentWindow.print();
-      } catch {
-        // Fallback: just show the ticket
-        window.open('').document.write(ticketHTML);
-      }
-      setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 500);
-  } else if (isIOS) {
-    // iOS Safari blocks popups and iframe printing. 
-    // Best workaround: inject content directly into body, print, and remove.
+  if (isMobile) {
+    // Mobile workaround (both Android & iOS): 
+    // Inject print container directly into body and use media query to hide main app.
+    // Bypasses popup blockers and iframe rendering bugs in Chrome/Safari.
     const printContainer = document.createElement('div');
-    printContainer.id = 'ios-print-container';
+    printContainer.id = 'mobile-print-container';
     
     // Extract body and styles
     const bodyContent = ticketHTML.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
@@ -202,9 +184,9 @@ export function printTicket(order, config = {}) {
     const globalStyle = document.createElement('style');
     globalStyle.innerHTML = `
       @media print {
-        body * { visibility: hidden; }
-        #ios-print-container, #ios-print-container * { visibility: visible; }
-        #ios-print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+        body > *:not(#mobile-print-container) { display: none !important; }
+        #mobile-print-container, #mobile-print-container * { visibility: visible !important; display: block !important; }
+        #mobile-print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
       }
     `;
     document.head.appendChild(globalStyle);
