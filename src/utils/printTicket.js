@@ -145,13 +145,15 @@ export function printTicket(order, config = {}) {
         <style>
           @page { margin: 0; size: 58mm auto; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 13px; color: #000; width: 100%; margin: 0; padding: 8px; }
-          .ticket { padding: 8px 0; }
-          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.5; margin-bottom: 8px; }
-          .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #ddd; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-          .total { text-align: right; font-weight: bold; font-size: 14px; }
-          .thanks { text-align: center; font-size: 11px; }
+          body { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
+          .ticket { padding: 4px 0; }
+          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.4; margin-bottom: 8px; }
+          .header strong { font-size: 18px; font-weight: bold; }
+          .header span { font-size: 12px; color: #333; }
+          .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #000; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
+          .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 6px; }
+          .thanks { text-align: center; font-size: 12px; margin-top: 12px; }
         </style>
       </head>
       <body>
