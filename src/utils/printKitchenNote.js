@@ -41,19 +41,18 @@ export function printKitchenNote(order) {
     <html>
       <head>
         <title>Comanda #${order.order_number || order.id}</title>
-        <style>
-          @page { margin: 0; size: 58mm 2000mm; }
+          @page { margin: 0; size: 58mm auto; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 13px; color: #000; width: 100%; max-width: 200px; margin: 0 auto; padding: 5px; }
+          body { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
           .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
-          .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
-          .header .time { font-size: 12px; }
-          .badge { text-align: center; font-size: 16px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
-          .dest-line { font-size: 13px; padding: 2px 4px; }
+          .header h1 { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
+          .header .time { font-size: 13px; }
+          .badge { text-align: center; font-size: 18px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
+          .dest-line { font-size: 14px; padding: 2px 4px; }
           .item { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dashed #ccc; }
-          .qty { font-size: 22px; font-weight: 900; min-width: 32px; }
-          .name { font-size: 15px; font-weight: bold; }
-          .nota { margin-top: 10px; padding: 8px; border: 2px dashed #000; font-size: 13px; background: #fffde7; }
+          .qty { font-size: 24px; font-weight: 900; min-width: 32px; }
+          .name { font-size: 16px; font-weight: bold; }
+          .nota { margin-top: 10px; padding: 8px; border: 2px dashed #000; font-size: 14px; background: #fffde7; }
         </style>
       </head>
       <body>
@@ -84,7 +83,7 @@ export function printKitchenNote(order) {
     const bodyContent = html.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
     const stylesContent = html.split('<style>')[1].split('</style>')[0];
     
-    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 200px; margin: 0 auto; color: #000;">${bodyContent}</div>`;
+    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
     document.body.appendChild(printContainer);
 
     // Add global style to hide everything else during print

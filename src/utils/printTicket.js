@@ -143,15 +143,15 @@ export function printTicket(order, config = {}) {
       <head>
         <title>Ticket Orden #${displayId}</title>
         <style>
-          @page { margin: 0; size: 58mm 2000mm; }
+          @page { margin: 0; size: 58mm auto; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 12px; color: #000; width: 100%; max-width: 200px; margin: 0 auto; padding: 5px; }
+          body { font-family: monospace; font-size: 13px; color: #000; width: 100%; margin: 0; padding: 8px; }
           .ticket { padding: 8px 0; }
           .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.5; margin-bottom: 8px; }
           .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #ddd; }
           .row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-          .total { text-align: right; font-weight: bold; font-size: 13px; }
-          .thanks { text-align: center; font-size: 10px; }
+          .total { text-align: right; font-weight: bold; font-size: 14px; }
+          .thanks { text-align: center; font-size: 11px; }
         </style>
       </head>
       <body>
@@ -177,7 +177,7 @@ export function printTicket(order, config = {}) {
     const bodyContent = ticketHTML.split('<body>')[1].split('</body>')[0].replace('<script>window.onload = function() { window.print(); }</script>', '');
     const stylesContent = ticketHTML.split('<style>')[1].split('</style>')[0];
     
-    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 200px; margin: 0 auto; color: #000;">${bodyContent}</div>`;
+    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
     document.body.appendChild(printContainer);
 
     // Add global style to hide everything else during print
