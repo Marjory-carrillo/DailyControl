@@ -180,25 +180,34 @@ export function printTicket(order, config = {}) {
     // Mobile workaround (both Android & iOS): 
     // Inject print container directly into body and use media query to hide main app.
     // Bypasses popup blockers and iframe rendering bugs in Chrome/Safari.
-    const printContainer = document.createElement('div');
-    printContainer.id = 'mobile-print-container';
+    let printContainer = document.getElementById('mobile-print-container');
+    if (!printContainer) {
+      printContainer = document.createElement('div');
+      printContainer.id = 'mobile-print-container';
+      printContainer.style.display = 'none';
+      document.body.appendChild(printContainer);
+    }
     
     // Extract body and styles safely
     const bodyContent = safeExtract(ticketHTML, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
     const stylesContent = safeExtract(ticketHTML, '<style>', '</style>');
     
     printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
-    document.body.appendChild(printContainer);
 
-    // Add global style to hide everything else during print
-    const globalStyle = document.createElement('style');
-    globalStyle.innerHTML = `
-      @media print {
-        body > *:not(#mobile-print-container) { display: none !important; }
-        #mobile-print-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
-      }
-    `;
-    document.head.appendChild(globalStyle);
+    // Add global style to hide everything else during print (if not already added)
+    let globalStyle = document.getElementById('mobile-print-style');
+    if (!globalStyle) {
+      globalStyle = document.createElement('style');
+      globalStyle.id = 'mobile-print-style';
+      globalStyle.innerHTML = `
+        #mobile-print-container { display: none; }
+        @media print {
+          body > *:not(#mobile-print-container) { display: none !important; }
+          #mobile-print-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+        }
+      `;
+      document.head.appendChild(globalStyle);
+    }
 
     setTimeout(() => {
       try {
@@ -208,10 +217,6 @@ export function printTicket(order, config = {}) {
       } catch (err) {
         console.error('Failed to trigger native print:', err);
       }
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
-        if (document.head.contains(globalStyle)) document.head.removeChild(globalStyle);
-      }, 1000);
     }, 300);
   } else {
     // Desktop: classic window.open approach
