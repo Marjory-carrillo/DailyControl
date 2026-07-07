@@ -192,7 +192,7 @@ export function printTicket(order, config = {}) {
     const bodyContent = safeExtract(ticketHTML, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
     const stylesContent = safeExtract(ticketHTML, '<style>', '</style>');
     
-    printContainer.innerHTML = `<style>${stylesContent}</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
+    printContainer.innerHTML = `<style>@media print { ${stylesContent} }</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
 
     // Add global style to hide everything else during print (if not already added)
     let globalStyle = document.getElementById('mobile-print-style');
