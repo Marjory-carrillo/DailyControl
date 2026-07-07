@@ -177,30 +177,23 @@ export function printTicket(order, config = {}) {
   }
 
   if (isMobile) {
-    alert("DEBUG [Ticket]: Entró a isMobile = true");
     let printContainer = document.getElementById('mobile-print-container');
     if (!printContainer) {
-      alert("DEBUG [Ticket]: No existe printContainer, creándolo...");
       printContainer = document.createElement('div');
       printContainer.id = 'mobile-print-container';
       printContainer.style.display = 'none';
       document.body.appendChild(printContainer);
-    } else {
-      alert("DEBUG [Ticket]: Ya existe printContainer");
     }
     
     // Extract body and styles safely
     const bodyContent = safeExtract(ticketHTML, '<body>', '</body>').replace(/<script>.*?<\/script>/g, '');
     const stylesContent = safeExtract(ticketHTML, '<style>', '</style>');
     
-    alert("DEBUG [Ticket]: bodyContent largo: " + bodyContent.length + ", stylesContent largo: " + stylesContent.length);
-    
     printContainer.innerHTML = `<style>@media print { ${stylesContent} }</style><div class="print-content" style="width: 100%; color: #000;">${bodyContent}</div>`;
 
     // Add global style to hide everything else during print (if not already added)
     let globalStyle = document.getElementById('mobile-print-style');
     if (!globalStyle) {
-      alert("DEBUG [Ticket]: No existe mobile-print-style, creándolo...");
       globalStyle = document.createElement('style');
       globalStyle.id = 'mobile-print-style';
       globalStyle.innerHTML = `
@@ -211,24 +204,15 @@ export function printTicket(order, config = {}) {
         }
       `;
       document.head.appendChild(globalStyle);
-    } else {
-      alert("DEBUG [Ticket]: Ya existe mobile-print-style");
     }
 
-    setTimeout(() => {
-      try {
-        alert("DEBUG [Ticket]: Llamando a window.print(). Tipo de window.print: " + typeof window.print);
-        if (typeof window.print === 'function') {
-          window.print();
-          alert("DEBUG [Ticket]: window.print() ejecutado.");
-        } else {
-          alert("DEBUG [Ticket]: window.print NO es una función!");
-        }
-      } catch (err) {
-        alert("DEBUG ERROR [Ticket]: " + err.message);
-        console.error('Failed to trigger native print:', err);
+    try {
+      if (typeof window.print === 'function') {
+        window.print();
       }
-    }, 300);
+    } catch (err) {
+      console.error('Failed to trigger native print:', err);
+    }
   } else {
     // Desktop: classic window.open approach
     try {
