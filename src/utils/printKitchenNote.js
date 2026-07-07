@@ -92,8 +92,7 @@ export function printKitchenNote(order) {
     globalStyle.innerHTML = `
       @media print {
         body > *:not(#mobile-print-container) { display: none !important; }
-        #mobile-print-container, #mobile-print-container * { visibility: visible !important; display: block !important; }
-        #mobile-print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+        #mobile-print-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
       }
     `;
     document.head.appendChild(globalStyle);
