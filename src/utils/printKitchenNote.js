@@ -70,9 +70,11 @@ export function printKitchenNote(order) {
     </html>
   `;
 
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
-  if (isMobile) {
+  if (isAndroid) {
+    // On Android: hidden iframe works best to prevent multiple tabs
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:200px; height:600px;';
     document.body.appendChild(iframe);
@@ -85,7 +87,11 @@ export function printKitchenNote(order) {
       setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 400);
   } else {
+    // iOS and Desktop: classic window.open approach
     const win = window.open('', '_blank', 'width=220,height=600');
-    if (win) { win.document.write(html); win.document.close(); }
+    if (win) { 
+      win.document.write(html); 
+      win.document.close(); 
+    }
   }
 }

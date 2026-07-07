@@ -160,12 +160,14 @@ export function printTicket(order, config = {}) {
     </html>
   `;
 
-  // On mobile, window.open() often fails or shows blank pages.
-  // Use an iframe approach instead for more reliable cross-device printing.
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  // On mobile, window.open() often fails or shows blank pages for Android.
+  // Use an iframe approach instead for more reliable cross-device printing on Android.
+  // iOS Safari blocks iframe printing, so we use window.open for iOS and Desktop.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    // On mobile: create a hidden iframe to print from
+  if (isAndroid) {
+    // On Android: create a hidden iframe to print from
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:200px; height:800px;';
     document.body.appendChild(iframe);
@@ -183,7 +185,7 @@ export function printTicket(order, config = {}) {
       setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 500);
   } else {
-    // Desktop: classic window.open approach
+    // iOS and Desktop: classic window.open approach
     const printWindow = window.open('', '_blank', 'width=220,height=800');
     if (printWindow) {
       printWindow.document.write(ticketHTML);
