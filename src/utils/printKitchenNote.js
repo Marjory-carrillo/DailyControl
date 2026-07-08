@@ -77,7 +77,9 @@ export function printKitchenNote(order) {
     const printContainer = document.getElementById('print-container');
     if (printContainer) {
       printContainer.innerHTML = html;
-      window.print();
+      setTimeout(() => {
+        window.print();
+      }, 100);
     } else {
       console.error("El contenedor de impresión (#print-container) no existe en el DOM.");
       // Fallback a window.open si no existe el contenedor
@@ -85,8 +87,10 @@ export function printKitchenNote(order) {
       if (printWindow) {
         printWindow.document.write(`<html><body>${html}</body></html>`);
         printWindow.document.close();
-        printWindow.print();
-        printWindow.close();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 100);
       }
     }
   } catch (err) {
