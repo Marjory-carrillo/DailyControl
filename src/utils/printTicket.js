@@ -138,8 +138,6 @@ export function printTicket(order, config = {}) {
       <div style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 14px;">
         . . . . . . . . . . . . . . .
         <br/><br/>
-        . . . . . . . . . . . . . . .
-        <br/><br/>
       </div>
     </div>
   `;

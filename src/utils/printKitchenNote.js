@@ -71,7 +71,6 @@ export function printKitchenNote(order) {
       </div>
       ${renderNote()}
       <div style="text-align: center; margin-top: 20px; font-weight: bold; font-size: 14px;">
-        . . . . . . . . . . . . . . .
         <br/><br/>
         . . . . . . . . . . . . . . .
         <br/><br/>
