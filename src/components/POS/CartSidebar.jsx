@@ -154,9 +154,9 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
   const orderKeys = Object.keys(groupedByOrder).sort();
 
   return (
-    <div className="glass-panel" style={{ width: fullHeight ? '100%' : '360px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="glass-panel" style={{ width: fullHeight ? '100%' : '360px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: fullHeight ? '14px 16px' : '20px', borderBottom: 'var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: fullHeight ? '14px 16px' : '20px', borderBottom: 'var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <h2 style={{ margin: 0, fontSize: fullHeight ? '1.15rem' : '1.5rem' }}>
           {loadedAccount ? `Mesa ${loadedAccount.table || loadedAccount.id}` : 'Nueva Orden'}
         </h2>
@@ -180,7 +180,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
 
       {/* Sub-order tabs (only show when there are 2+) */}
       {hasMultipleOrders && (
-        <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(108,92,231,0.04)', display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center' }}>
+        <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(108,92,231,0.04)', display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center', flexShrink: 0 }}>
           <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: '600', flexShrink: 0 }}>Agregando a:</span>
           <button onClick={() => setActive('')} style={{
             padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer',
@@ -199,202 +199,216 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
         </div>
       )}
 
-      {/* Cart items — grouped */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: fullHeight ? '10px 16px' : '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {cart.length === 0 ? (
-          <p style={{ color: 'var(--text-light)', textAlign: 'center', marginTop: '50px' }}>
-            Agrega productos a la orden
-          </p>
-        ) : hasMultipleOrders ? (
-          // Grouped display
-          orderKeys.map(orderKey => (
-            <div key={orderKey}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '2px solid #6c5ce7', marginBottom: '6px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#6c5ce7' }}>{orderKey}</span>
-                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#555' }}>${(subOrderTotals[orderKey] || 0).toFixed(2)}</span>
+      {/* Middle Scrollable Section (Cart items + Config inputs) */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: fullHeight ? '14px 16px' : '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {/* Cart items list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {cart.length === 0 ? (
+            <p style={{ color: 'var(--text-light)', textAlign: 'center', marginTop: '30px', marginBottom: '30px' }}>
+              Agrega productos a la orden
+            </p>
+          ) : hasMultipleOrders ? (
+            // Grouped display
+            orderKeys.map(orderKey => (
+              <div key={orderKey}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '2px solid #6c5ce7', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#6c5ce7' }}>{orderKey}</span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#555' }}>${(subOrderTotals[orderKey] || 0).toFixed(2)}</span>
+                </div>
+                {groupedByOrder[orderKey].map(item => (
+                  <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
+                ))}
               </div>
-              {groupedByOrder[orderKey].map(item => (
-                <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
-              ))}
+            ))
+          ) : (
+            // Simple flat display
+            cart.map(item => (
+              <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
+            ))
+          )}
+        </div>
+
+        {/* Inputs (only show if cart has items) */}
+        {cart.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '12px' }}>
+            {/* Notes */}
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>📝 Nota (opcional)</label>
+              <input value={note} onChange={e => setNote(e.target.value)} placeholder="Ej: sin cebolla, extra chile..." style={inputStyle} />
             </div>
-          ))
-        ) : (
-          // Simple flat display
-          cart.map(item => (
-            <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
-          ))
+
+            {/* Discount */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tag size={15} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
+              <input type="number" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="Descuento $0.00" min="0" style={{ ...inputStyle, flex: 1 }} />
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Método de Pago</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {['Efectivo', 'Transferencia'].map(method => (
+                  <button key={method} onClick={() => setPaymentMethod(method)} style={{
+                    flex: 1, padding: '8px 0', fontSize: '0.78rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit',
+                    background: paymentMethod === method ? 'var(--primary-color)' : 'transparent',
+                    color: paymentMethod === method ? 'white' : 'var(--text-dark)',
+                    border: paymentMethod === method ? 'none' : '1px solid rgba(0,0,0,0.1)',
+                  }}>{method}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            {!isDelivery && (
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>🪑 Mesa (opcional)</label>
+                {config?.tables && config.tables.length > 0 ? (
+                  <select value={tableNumber} onChange={e => setTableNumber(e.target.value)} style={inputStyle}>
+                    <option value="">Seleccionar Mesa...</option>
+                    {config.tables.map(t => {
+                      const isOccupied = occupiedTables.includes(t.name);
+                      const isThis = loadedAccount && loadedAccount.table === t.name;
+                      return <option key={t.id} value={t.name} disabled={isOccupied && !isThis}>{t.name}{isOccupied && !isThis ? ' (Ocupada)' : ''}</option>;
+                    })}
+                  </select>
+                ) : (
+                  <input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Ej: Mesa 4" style={inputStyle} />
+                )}
+              </div>
+            )}
+
+            {/* Delivery Option */}
+            {config?.deliveryEnabled && (
+              <div style={{ background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600', color: 'var(--text-dark)', marginBottom: isDelivery ? '10px' : '0', fontSize: '0.9rem' }}>
+                  <input type="checkbox" checked={isDelivery} onChange={e => setIsDelivery(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                  <Bike size={18} color="var(--primary-color)" /> Domicilio
+                </label>
+                {isDelivery && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Nombre del cliente */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <UserCircle2 size={15} color="var(--text-light)" />
+                      <input value={deliveryClientName} onChange={e => setDeliveryClientName(e.target.value)} placeholder="Nombre del cliente..." style={{ ...inputStyle, flex: 1 }} />
+                    </div>
+                    {/* Colonia */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MapPin size={15} color="var(--text-light)" />
+                      <input 
+                        list="colonia-suggestions"
+                        value={deliveryColonia} 
+                        onChange={e => setDeliveryColonia(e.target.value)} 
+                        placeholder="Colonia..." 
+                        style={{ ...inputStyle, flex: 1 }} 
+                      />
+                      <datalist id="colonia-suggestions">
+                        {colonySuggestions.map((col, idx) => (
+                          <option key={idx} value={col} />
+                        ))}
+                      </datalist>
+                    </div>
+                    {/* Calle / Número */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '23px' }}>
+                      <input 
+                        list="calle-suggestions"
+                        value={deliveryCalle} 
+                        onChange={e => setDeliveryCalle(e.target.value)} 
+                        placeholder="Calle..." 
+                        style={{ ...inputStyle, flex: 2 }} 
+                      />
+                      <datalist id="calle-suggestions">
+                        {streetSuggestions.map((st, idx) => (
+                          <option key={idx} value={st} />
+                        ))}
+                      </datalist>
+                      <input value={deliveryNumero} onChange={e => setDeliveryNumero(e.target.value)} placeholder="No..." style={{ ...inputStyle, flex: 1 }} />
+                    </div>
+                    {/* Teléfono */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Phone size={15} color="var(--text-light)" />
+                      <input value={deliveryPhone} onChange={e => setDeliveryPhone(e.target.value)} placeholder="Teléfono" style={{ ...inputStyle, flex: 1 }} />
+                    </div>
+                    {/* Costo de Envío */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', minWidth: '95px' }}>🛵 Envío ($):</span>
+                      <input 
+                        type="number" 
+                        value={deliveryFee} 
+                        onChange={e => setDeliveryFee(e.target.value)} 
+                        placeholder="0.00" 
+                        min="0" 
+                        step="0.01" 
+                        style={{ ...inputStyle, flex: 1 }} 
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div style={{ padding: fullHeight ? '10px 16px' : '14px 20px', borderTop: 'var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Notes */}
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>📝 Nota (opcional)</label>
-          <input value={note} onChange={e => setNote(e.target.value)} placeholder="Ej: sin cebolla, extra chile..." style={inputStyle} />
-        </div>
-
-        {/* Discount */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Tag size={15} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
-          <input type="number" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="Descuento $0.00" min="0" style={{ ...inputStyle, flex: 1 }} />
-        </div>
-
-        {(discountAmount > 0 || (isDelivery && (parseFloat(deliveryFee) || 0) > 0)) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px 0', borderTop: '1px dashed rgba(0,0,0,0.1)' }}>
-            {discountAmount > 0 && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                  <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+      {/* Fixed Bottom Action Panel (Total and checkout buttons) */}
+      {cart.length > 0 && (
+        <div style={{ padding: fullHeight ? '12px 16px' : '16px 20px', borderTop: 'var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255, 255, 255, 0.45)', flexShrink: 0 }}>
+          {/* Subtotal and discount if applicable */}
+          {(discountAmount > 0 || (isDelivery && (parseFloat(deliveryFee) || 0) > 0)) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingBottom: '6px', borderBottom: '1px dashed rgba(0,0,0,0.1)' }}>
+              {discountAmount > 0 && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-light)', fontSize: '0.85rem' }}>
+                    <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-color)', fontSize: '0.85rem' }}>
+                    <span>Descuento</span><span>- ${discountAmount.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+              {isDelivery && (parseFloat(deliveryFee) || 0) > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
+                  <span>Envío</span><span>+ ${(parseFloat(deliveryFee) || 0).toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-color)', fontSize: '0.9rem' }}>
-                  <span>Descuento</span><span>- ${discountAmount.toFixed(2)}</span>
-                </div>
-              </>
-            )}
-            {isDelivery && (parseFloat(deliveryFee) || 0) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-dark)', fontSize: '0.9rem' }}>
-                <span>Envío</span><span>+ ${(parseFloat(deliveryFee) || 0).toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Total */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 'bold', paddingTop: '2px' }}>
-          <span>Total:</span>
-          <span style={{ color: 'var(--primary-color)' }}>${total.toFixed(2)}</span>
-        </div>
-
-        {/* Payment */}
-        <div>
-          <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Método de Pago</label>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {['Efectivo', 'Transferencia'].map(method => (
-              <button key={method} onClick={() => setPaymentMethod(method)} style={{
-                flex: 1, padding: '8px 0', fontSize: '0.78rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontFamily: 'inherit',
-                background: paymentMethod === method ? 'var(--primary-color)' : 'transparent',
-                color: paymentMethod === method ? 'white' : 'var(--text-dark)',
-                border: paymentMethod === method ? 'none' : '1px solid rgba(0,0,0,0.1)',
-              }}>{method}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Table */}
-        {!isDelivery && (
-          <div>
-            <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>🪑 Mesa (opcional)</label>
-            {config?.tables && config.tables.length > 0 ? (
-              <select value={tableNumber} onChange={e => setTableNumber(e.target.value)} style={inputStyle}>
-                <option value="">Seleccionar Mesa...</option>
-                {config.tables.map(t => {
-                  const isOccupied = occupiedTables.includes(t.name);
-                  const isThis = loadedAccount && loadedAccount.table === t.name;
-                  return <option key={t.id} value={t.name} disabled={isOccupied && !isThis}>{t.name}{isOccupied && !isThis ? ' (Ocupada)' : ''}</option>;
-                })}
-              </select>
-            ) : (
-              <input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Ej: Mesa 4" style={inputStyle} />
-            )}
-          </div>
-        )}
-
-        {/* Delivery */}
-        {config?.deliveryEnabled && (
-          <div style={{ background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600', color: 'var(--text-dark)', marginBottom: isDelivery ? '10px' : '0', fontSize: '0.9rem' }}>
-              <input type="checkbox" checked={isDelivery} onChange={e => setIsDelivery(e.target.checked)} style={{ width: '16px', height: '16px' }} />
-              <Bike size={18} color="var(--primary-color)" /> Domicilio
-            </label>
-          {isDelivery && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Nombre del cliente */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UserCircle2 size={15} color="var(--text-light)" />
-                <input value={deliveryClientName} onChange={e => setDeliveryClientName(e.target.value)} placeholder="Nombre del cliente..." style={{ ...inputStyle, flex: 1 }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={15} color="var(--text-light)" />
-                <input 
-                  list="colonia-suggestions"
-                  value={deliveryColonia} 
-                  onChange={e => setDeliveryColonia(e.target.value)} 
-                  placeholder="Colonia..." 
-                  style={{ ...inputStyle, flex: 1 }} 
-                />
-                <datalist id="colonia-suggestions">
-                  {colonySuggestions.map((col, idx) => (
-                    <option key={idx} value={col} />
-                  ))}
-                </datalist>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '23px' }}>
-                <input 
-                  list="calle-suggestions"
-                  value={deliveryCalle} 
-                  onChange={e => setDeliveryCalle(e.target.value)} 
-                  placeholder="Calle..." 
-                  style={{ ...inputStyle, flex: 2 }} 
-                />
-                <datalist id="calle-suggestions">
-                  {streetSuggestions.map((st, idx) => (
-                    <option key={idx} value={st} />
-                  ))}
-                </datalist>
-                <input value={deliveryNumero} onChange={e => setDeliveryNumero(e.target.value)} placeholder="No..." style={{ ...inputStyle, flex: 1 }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Phone size={15} color="var(--text-light)" />
-                <input value={deliveryPhone} onChange={e => setDeliveryPhone(e.target.value)} placeholder="Teléfono" style={{ ...inputStyle, flex: 1 }} />
-              </div>
-              {/* Costo de Envío */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px', marginTop: '4px' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', minWidth: '95px' }}>🛵 Envío ($):</span>
-                <input 
-                  type="number" 
-                  value={deliveryFee} 
-                  onChange={e => setDeliveryFee(e.target.value)} 
-                  placeholder="0.00" 
-                  min="0" 
-                  step="0.01" 
-                  style={{ ...inputStyle, flex: 1 }} 
-                />
-              </div>
+              )}
             </div>
           )}
-          </div>
-        )}
 
-        {/* Action buttons */}
-        {!isDelivery ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
-                disabled={cart.length === 0} onClick={() => handleAction('save')}>Guardar</button>
-              <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '14px', fontSize: '0.92rem' }}
-                disabled={cart.length === 0} onClick={() => handleAction('prepare')}>
-                🍳 Preparar
+          {/* Total display */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold' }}>
+            <span>Total:</span>
+            <span style={{ color: 'var(--primary-color)' }}>${total.toFixed(2)}</span>
+          </div>
+
+          {/* Action buttons */}
+          {!isDelivery ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '12px', fontSize: '0.9rem' }}
+                  onClick={() => handleAction('save')}>Guardar</button>
+                <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '12px', fontSize: '0.9rem' }}
+                  onClick={() => handleAction('prepare')}>
+                  🍳 Preparar
+                </button>
+              </div>
+              <button className="btn-primary" style={{ width: '100%', background: 'var(--success-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem' }}
+                onClick={() => handleAction('checkout')}>
+                💵 Cobrar
               </button>
             </div>
-            <button className="btn-primary" style={{ width: '100%', background: 'var(--success-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '16px', fontSize: '1.05rem' }}
-              disabled={cart.length === 0} onClick={() => handleAction('checkout')}>
-              💵 Cobrar
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem', background: '#FF9800' }}
-              disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('prepare')}>
-              🛵 Preparar (Domicilio)
-            </button>
-            <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '16px', fontSize: '1.05rem', background: 'var(--success-color)' }}
-              disabled={cart.length === 0 || (!deliveryCalle.trim() || !deliveryColonia.trim())} onClick={() => handleAction('checkout')}>
-              💵 Cobrar (Domicilio)
-            </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '12px', fontSize: '0.95rem', background: '#FF9800' }}
+                disabled={!deliveryCalle.trim() || !deliveryColonia.trim()} onClick={() => handleAction('prepare')}>
+                🛵 Preparar (Domicilio)
+              </button>
+              <button className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', padding: '14px', fontSize: '1rem', background: 'var(--success-color)' }}
+                disabled={!deliveryCalle.trim() || !deliveryColonia.trim()} onClick={() => handleAction('checkout')}>
+                💵 Cobrar (Domicilio)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
