@@ -187,3 +187,25 @@ body {
 button, input, select, textarea {
   touch-action: manipulation;
 }
+
+/* ─── Printing Styles ─────────────────────────────────────────── */
+#print-container {
+  display: none;
+}
+
+@media print {
+  body > *:not(#print-container) {
+    display: none !important;
+  }
+  #print-container {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: black;
+  }
+}

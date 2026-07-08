@@ -46,55 +46,50 @@ export function printKitchenNote(order) {
       : '';
 
   const html = `
-    <html>
-      <head>
-        <title>Comanda #${order.order_number || order.id}</title>
-        <style>
-          @page { margin: 0; size: 58mm auto; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
-          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
-          .header h1 { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
-          .header .time { font-size: 13px; }
-          .badge { text-align: center; font-size: 18px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
-          .dest-line { font-size: 14px; padding: 2px 4px; }
-          .item { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dashed #ccc; }
-          .qty { font-size: 24px; font-weight: 900; min-width: 32px; }
-          .name { font-size: 16px; font-weight: bold; }
-          .nota { margin-top: 10px; padding: 8px; border: 2px dashed #000; font-size: 14px; background: #fffde7; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>COMANDA #${order.order_number || order.id}</h1>
-          <div class="time">${order.time || new Date().toLocaleTimeString()}</div>
-        </div>
-        ${renderDestino()}
-        <div style="margin-top:10px;">
-          ${renderItems()}
-        </div>
-        ${renderNote()}
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() {
-              window.close();
-            }, 300);
-          };
-        </script>
-      </body>
-    </html>
+    <div class="kitchen-wrapper">
+      <style>
+        @page { margin: 0; size: 58mm auto; }
+        .kitchen-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
+        .kitchen-wrapper { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
+        .header h1 { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
+        .header .time { font-size: 13px; }
+        .badge { text-align: center; font-size: 18px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
+        .dest-line { font-size: 14px; padding: 2px 4px; }
+        .item { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dashed #ccc; }
+        .qty { font-size: 24px; font-weight: 900; min-width: 32px; }
+        .name { font-size: 16px; font-weight: bold; }
+        .nota { margin-top: 10px; padding: 8px; border: 2px dashed #000; font-size: 14px; background: #fffde7; }
+      </style>
+      <div class="header">
+        <h1>COMANDA #${order.order_number || order.id}</h1>
+        <div class="time">${order.time || new Date().toLocaleTimeString()}</div>
+      </div>
+      ${renderDestino()}
+      <div style="margin-top:10px;">
+        ${renderItems()}
+      </div>
+      ${renderNote()}
+    </div>
   `;
 
   try {
-    const printWindow = window.open('', '_blank', 'width=220,height=600');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
+    const printContainer = document.getElementById('print-container');
+    if (printContainer) {
+      printContainer.innerHTML = html;
+      window.print();
     } else {
-      alert("El navegador bloqueó la ventana de impresión. Por favor, permite ventanas emergentes para este sitio.");
+      console.error("El contenedor de impresión (#print-container) no existe en el DOM.");
+      // Fallback a window.open si no existe el contenedor
+      const printWindow = window.open('', '_blank', 'width=220,height=600');
+      if (printWindow) {
+        printWindow.document.write(`<html><body>${html}</body></html>`);
+        printWindow.document.close();
+        printWindow.print();
+        printWindow.close();
+      }
     }
   } catch (err) {
-    console.error('Failed to open print window:', err);
+    console.error('Failed to trigger print:', err);
   }
 }

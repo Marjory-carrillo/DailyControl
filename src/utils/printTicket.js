@@ -139,44 +139,41 @@ export function printTicket(order, config = {}) {
   `;
 
   const ticketHTML = `
-    <html>
-      <head>
-        <title>Ticket Orden #${displayId}</title>
-        <style>
-          @page { margin: 0; size: 58mm auto; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
-          .ticket { padding: 4px 0; }
-          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.4; margin-bottom: 8px; }
-          .header strong { font-size: 18px; font-weight: bold; }
-          .header span { font-size: 12px; color: #333; }
-          .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #000; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
-          .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 6px; }
-          .thanks { text-align: center; font-size: 12px; margin-top: 12px; }
-        </style>
-      </head>         ${clienteCopy}
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() {
-              window.close();
-            }, 300);
-          };
-        </script>
-      </body>
-    </html>
+    <div class="ticket-wrapper">
+      <style>
+        @page { margin: 0; size: 58mm auto; }
+        .ticket-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
+        .ticket-wrapper { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
+        .ticket { padding: 4px 0; }
+        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.4; margin-bottom: 8px; }
+        .header strong { font-size: 18px; font-weight: bold; }
+        .header span { font-size: 12px; color: #333; }
+        .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #000; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
+        .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 6px; }
+        .thanks { text-align: center; font-size: 12px; margin-top: 12px; }
+      </style>
+      ${clienteCopy}
+    </div>
   `;
 
   try {
-    const printWindow = window.open('', '_blank', 'width=220,height=800');
-    if (printWindow) {
-      printWindow.document.write(ticketHTML);
-      printWindow.document.close();
+    const printContainer = document.getElementById('print-container');
+    if (printContainer) {
+      printContainer.innerHTML = ticketHTML;
+      window.print();
     } else {
-      alert("El navegador bloqueó la ventana de impresión. Por favor, permite ventanas emergentes para este sitio.");
+      console.error("El contenedor de impresión (#print-container) no existe en el DOM.");
+      // Fallback a window.open si no existe el contenedor
+      const printWindow = window.open('', '_blank', 'width=220,height=800');
+      if (printWindow) {
+        printWindow.document.write(`<html><body>${ticketHTML}</body></html>`);
+        printWindow.document.close();
+        printWindow.print();
+        printWindow.close();
+      }
     }
   } catch (err) {
-    console.error('Failed to open print window:', err);
+    console.error('Failed to trigger print:', err);
   }
 }
