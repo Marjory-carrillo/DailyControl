@@ -135,6 +135,12 @@ export function printTicket(order, config = {}) {
       ${renderPersonaSummary()}
       ${renderNote()}
       <p class="thanks" style="margin-top:10px;">¡Gracias por su preferencia!</p>
+      <div style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 14px;">
+        . . . . . . . . . . . . . . .
+        <br/><br/>
+        . . . . . . . . . . . . . . .
+        <br/><br/>
+      </div>
     </div>
   `;
 
@@ -143,15 +149,15 @@ export function printTicket(order, config = {}) {
       <style>
         @page { margin: 0; size: 58mm auto; }
         .ticket-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
-        .ticket-wrapper { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
+        .ticket-wrapper { font-family: monospace; font-size: 16px; font-weight: bold; color: #000; width: 100%; margin: 0; padding: 8px; line-height: 1.4; }
         .ticket { padding: 4px 0; }
-        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; line-height: 1.4; margin-bottom: 8px; }
-        .header strong { font-size: 18px; font-weight: bold; }
-        .header span { font-size: 12px; color: #333; }
-        .items { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #000; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 14px; }
-        .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 6px; }
-        .thanks { text-align: center; font-size: 12px; margin-top: 12px; }
+        .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 8px; line-height: 1.4; margin-bottom: 8px; }
+        .header strong { font-size: 20px; font-weight: 900; }
+        .header span { font-size: 14px; font-weight: bold; }
+        .items { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 2px solid #000; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 16px; font-weight: bold; }
+        .total { text-align: right; font-weight: 900; font-size: 19px; margin-top: 6px; }
+        .thanks { text-align: center; font-size: 14px; font-weight: bold; margin-top: 12px; }
       </style>
       ${clienteCopy}
     </div>

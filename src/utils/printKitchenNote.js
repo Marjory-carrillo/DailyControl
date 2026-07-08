@@ -50,16 +50,16 @@ export function printKitchenNote(order) {
       <style>
         @page { margin: 0; size: 58mm auto; }
         .kitchen-wrapper * { margin: 0; padding: 0; box-sizing: border-box; }
-        .kitchen-wrapper { font-family: monospace; font-size: 14px; color: #000; width: 100%; margin: 0; padding: 8px; }
-        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
-        .header h1 { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
-        .header .time { font-size: 13px; }
-        .badge { text-align: center; font-size: 18px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
-        .dest-line { font-size: 14px; padding: 2px 4px; }
-        .item { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px dashed #ccc; }
-        .qty { font-size: 24px; font-weight: 900; min-width: 32px; }
-        .name { font-size: 16px; font-weight: bold; }
-        .nota { margin-top: 10px; padding: 8px; border: 2px dashed #000; font-size: 14px; background: #fffde7; }
+        .kitchen-wrapper { font-family: monospace; font-size: 16px; font-weight: bold; color: #000; width: 100%; margin: 0; padding: 8px; line-height: 1.4; }
+        .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
+        .header h1 { font-size: 24px; font-weight: 900; letter-spacing: 2px; }
+        .header .time { font-size: 15px; }
+        .badge { text-align: center; font-size: 20px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
+        .dest-line { font-size: 16px; padding: 2px 4px; font-weight: bold; }
+        .item { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 2px dashed #000; }
+        .qty { font-size: 26px; font-weight: 900; min-width: 32px; }
+        .name { font-size: 18px; font-weight: bold; }
+        .nota { margin-top: 10px; padding: 8px; border: 3px dashed #000; font-size: 16px; background: #fffde7; font-weight: bold; }
       </style>
       <div class="header">
         <h1>COMANDA #${order.order_number || order.id}</h1>
@@ -70,6 +70,12 @@ export function printKitchenNote(order) {
         ${renderItems()}
       </div>
       ${renderNote()}
+      <div style="text-align: center; margin-top: 20px; font-weight: bold; font-size: 14px;">
+        . . . . . . . . . . . . . . .
+        <br/><br/>
+        . . . . . . . . . . . . . . .
+        <br/><br/>
+      </div>
     </div>
   `;
 
