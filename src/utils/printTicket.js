@@ -4,12 +4,28 @@ export function printTicket(order, config = {}) {
   const phone = config?.phone || '';
   const displayId = order.order_number || order.id;
 
-  const renderItems = () => order.items.map(i => `
-    <div class="row">
-      <span>${i.quantity}x ${i.name}${i.persona ? ` <em style="color:#888;">(${i.persona})</em>` : ''}</span>
-      <span>$${(i.price * i.quantity).toFixed(2)}</span>
-    </div>
-  `).join('');
+  const renderItems = () => {
+    let html = `
+      <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; border-bottom:1px solid #000; margin-bottom:6px; padding-bottom:4px;">
+        <div style="flex:1;">CANT / DESC</div>
+        <div>TOTAL</div>
+      </div>
+    `;
+    html += order.items.map(i => `
+      <div style="display:flex; flex-direction:column; margin-bottom:8px; line-height:1.2;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div style="flex:1; padding-right:8px; word-break:break-word;">
+            ${i.quantity}x ${i.name}
+          </div>
+          <div style="white-space:nowrap;">
+            $${(i.price * i.quantity).toFixed(2)}
+          </div>
+        </div>
+        ${i.persona ? `<div style="font-size:13px; color:#555; font-weight:normal; margin-left:20px; margin-top:2px;">↳ ${i.persona}</div>` : ''}
+      </div>
+    `).join('');
+    return html;
+  };
 
   // Group items by persona for persona summary
   const renderPersonaSummary = () => {
