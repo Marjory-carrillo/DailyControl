@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
 
-export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
+export default function CartSidebar({ cart, updateQuantity, removeFromCart, updateItemNote, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
   const { config } = useApp();
   const showToast = useToast();
   const { orders = [] } = useOrders() || {};
@@ -87,7 +87,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
       setTableNumber(''); setIsDelivery(false);
       setDeliveryCalle(''); setDeliveryNumero(''); setDeliveryColonia(''); setDeliveryPhone(''); setDeliveryClientName('');
       setDeliveryFee(config?.defaultDeliveryFee || 0);
-      if (onSetActivePersona) onSetActivePersona('');
+      if (onSetActivePersona) onSetActivePersona('Orden 1');
     }
   }, [cart.length]);
 
@@ -182,13 +182,13 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
       {hasMultipleOrders && (
         <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(108,92,231,0.04)', display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'center', flexShrink: 0 }}>
           <span style={{ fontSize: '0.72rem', color: '#888', fontWeight: '600', flexShrink: 0 }}>Agregando a:</span>
-          <button onClick={() => setActive('')} style={{
+          <button onClick={() => setActive('Orden 1')} style={{
             padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer',
             fontFamily: 'inherit', fontWeight: '700', fontSize: '0.82rem',
-            background: !activePersona ? '#6c5ce7' : 'rgba(0,0,0,0.06)',
-            color: !activePersona ? 'white' : '#555',
+            background: (!activePersona || activePersona === 'Orden 1') ? '#6c5ce7' : 'rgba(0,0,0,0.06)',
+            color: (!activePersona || activePersona === 'Orden 1') ? 'white' : '#555',
           }}>Orden 1</button>
-          {subOrders.map(s => (
+          {subOrders.filter(s => s !== 'Orden 1').map(s => (
             <button key={s} onClick={() => setActive(s)} style={{
               padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer',
               fontFamily: 'inherit', fontWeight: '700', fontSize: '0.82rem',
@@ -216,14 +216,14 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
                   <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#555' }}>${(subOrderTotals[orderKey] || 0).toFixed(2)}</span>
                 </div>
                 {groupedByOrder[orderKey].map(item => (
-                  <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
+                  <CartItem key={item.cartItemId} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} updateItemNote={updateItemNote} />
                 ))}
               </div>
             ))
           ) : (
             // Simple flat display
             cart.map(item => (
-              <CartItem key={`${item.id}-${item.persona || ''}`} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
+              <CartItem key={item.cartItemId} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} updateItemNote={updateItemNote} />
             ))
           )}
         </div>
@@ -414,28 +414,89 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, onCh
 }
 
 // ── Cart Item row ────────────────────────────────────────────────────────────
-function CartItem({ item, updateQuantity, removeFromCart }) {
+function CartItem({ item, updateQuantity, removeFromCart, updateItemNote }) {
+  const [showNote, setShowNote] = useState(false);
+  const [noteValue, setNoteValue] = useState(item.itemNote || '');
+  const [frequentNotes, setFrequentNotes] = useState([]);
+
+  React.useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`frequentNotes_${item.id}`) || '[]');
+      setFrequentNotes(saved);
+    } catch (e) {}
+  }, [item.id]);
+
+  const saveNote = (note) => {
+    updateItemNote(item.cartItemId, note);
+    if (note.trim()) {
+      let saved = [...frequentNotes];
+      if (!saved.includes(note.trim())) {
+        saved.unshift(note.trim());
+        if (saved.length > 5) saved = saved.slice(0, 5); // Keep top 5
+        setFrequentNotes(saved);
+        localStorage.setItem(`frequentNotes_${item.id}`, JSON.stringify(saved));
+      }
+    }
+  };
+
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      background: 'rgba(0,0,0,0.03)', padding: '8px 10px', borderRadius: '10px',
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>{item.name}</p>
-        <span style={{ color: 'var(--primary-color)', fontSize: '0.88rem' }}>${(item.price * item.quantity).toFixed(2)}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(0,0,0,0.03)', padding: '8px 10px', borderRadius: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>{item.name}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+            <span style={{ color: 'var(--primary-color)', fontSize: '0.88rem' }}>${(item.price * item.quantity).toFixed(2)}</span>
+            <button onClick={() => setShowNote(!showNote)} style={{ background: 'none', border: 'none', color: '#888', fontSize: '0.75rem', cursor: 'pointer', padding: '0', textDecoration: 'underline' }}>
+              {item.itemNote ? 'Editar nota' : '+ Nota'}
+            </button>
+          </div>
+          {item.itemNote && !showNote && (
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px', fontStyle: 'italic', wordBreak: 'break-word' }}>
+              ↳ {item.itemNote}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+          <button onClick={() => updateQuantity(item.cartItemId, -1)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Minus size={14} />
+          </button>
+          <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
+          <button onClick={() => updateQuantity(item.cartItemId, 1)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Plus size={14} />
+          </button>
+          <button onClick={() => removeFromCart(item.cartItemId)} style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', marginLeft: '2px', display: 'flex' }}>
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <button onClick={() => updateQuantity(item.id, -1, item.persona)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Minus size={14} />
-        </button>
-        <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
-        <button onClick={() => updateQuantity(item.id, 1, item.persona)} style={{ background: 'rgba(0,0,0,0.06)', border: 'none', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Plus size={14} />
-        </button>
-        <button onClick={() => removeFromCart(item.id, item.persona)} style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', marginLeft: '2px', display: 'flex' }}>
-          <Trash2 size={16} />
-        </button>
-      </div>
+      {showNote && (
+        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <input 
+              type="text" 
+              value={noteValue} 
+              onChange={e => setNoteValue(e.target.value)} 
+              placeholder="Ej: sin cebolla..." 
+              style={{ flex: 1, padding: '6px 8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', outline: 'none' }}
+              onKeyDown={e => { if (e.key === 'Enter') { saveNote(noteValue); setShowNote(false); } }}
+            />
+            <button onClick={() => { saveNote(noteValue); setShowNote(false); }} style={{ background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '6px', padding: '0 10px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold' }}>✓</button>
+          </div>
+          {frequentNotes.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {frequentNotes.map((fn, idx) => (
+                <button 
+                  key={idx} 
+                  onClick={() => { setNoteValue(fn); saveNote(fn); setShowNote(false); }}
+                  style={{ background: 'rgba(0,0,0,0.06)', border: 'none', borderRadius: '12px', padding: '4px 8px', fontSize: '0.72rem', color: '#555', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  {fn}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

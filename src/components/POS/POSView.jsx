@@ -20,7 +20,7 @@ export default function POSView({ employeeInfo }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showOpenAccounts, setShowOpenAccounts] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
-  const [activePersona, setActivePersona] = useState(''); // current persona for adding items
+  const [activePersona, setActivePersona] = useState('Orden 1'); // current persona for adding items
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -28,26 +28,26 @@ export default function POSView({ employeeInfo }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Add to cart — now supports persona
+  // Add to cart — now supports persona and unique cartItemId
   const handleAddToCart = (item) => {
     setCart(prev => {
-      // Find existing item with same id AND same persona
-      const persona = activePersona || undefined;
-      const existing = prev.find(i => i.id === item.id && (i.persona || '') === (persona || ''));
+      const persona = activePersona || 'Orden 1';
+      // Buscar si ya existe el mismo artículo sin una nota individual para incrementar cantidad
+      const existing = prev.find(i => i.id === item.id && (i.persona || 'Orden 1') === persona && !i.itemNote);
       if (existing) {
         return prev.map(i =>
-          (i.id === item.id && (i.persona || '') === (persona || ''))
+          (i.cartItemId === existing.cartItemId)
             ? { ...i, quantity: i.quantity + 1 }
             : i
         );
       }
-      return [...prev, { ...item, quantity: 1, persona: persona || undefined }];
+      return [...prev, { ...item, cartItemId: Date.now() + Math.random().toString(), quantity: 1, persona: persona, itemNote: '' }];
     });
   };
 
-  const updateQuantity = (id, delta, persona) => {
+  const updateQuantity = (cartItemId, delta) => {
     setCart(prev => prev.map(item => {
-      if (item.id === id && (item.persona || '') === (persona || '')) {
+      if (item.cartItemId === cartItemId) {
         const newQ = item.quantity + delta;
         return newQ > 0 ? { ...item, quantity: newQ } : item;
       }
@@ -55,8 +55,12 @@ export default function POSView({ employeeInfo }) {
     }));
   };
 
-  const removeFromCart = (id, persona) => {
-    setCart(prev => prev.filter(item => !(item.id === id && (item.persona || '') === (persona || ''))));
+  const removeFromCart = (cartItemId) => {
+    setCart(prev => prev.filter(item => item.cartItemId !== cartItemId));
+  };
+
+  const updateItemNote = (cartItemId, note) => {
+    setCart(prev => prev.map(item => item.cartItemId === cartItemId ? { ...item, itemNote: note } : item));
   };
 
   const [openAccountId, setOpenAccountId] = useState(null);
@@ -191,7 +195,7 @@ export default function POSView({ employeeInfo }) {
       setCart([]);
       setOpenAccountId(null);
       setLoadedAccount(null);
-      setActivePersona('');
+      setActivePersona('Orden 1');
       setMobileView('menu');
     } catch (err) {
       console.error(err);
@@ -269,8 +273,8 @@ export default function POSView({ employeeInfo }) {
         {/* Cart view */}
         {mobileView === 'cart' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
-             <CartSidebar
-              cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart}
+            <CartSidebar
+              cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} updateItemNote={updateItemNote}
               onCheckout={handleCheckout} loadedAccount={loadedAccount}
               onCloseAccount={() => { setCart([]); setOpenAccountId(null); setLoadedAccount(null); setMobileView('menu'); }}
               fullHeight
@@ -320,7 +324,7 @@ export default function POSView({ employeeInfo }) {
         </div>
       </div>
       <CartSidebar
-        cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart}
+        cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} updateItemNote={updateItemNote}
         onCheckout={handleCheckout} loadedAccount={loadedAccount}
         onCloseAccount={() => { setCart([]); setOpenAccountId(null); setLoadedAccount(null); }}
         activePersona={activePersona}

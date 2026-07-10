@@ -16,8 +16,11 @@ export function printKitchenNote(order) {
       .map(
         i => `
       <div class="item">
-        <span class="qty">${i.quantity}x</span>
-        <span class="name">${i.name}${i.persona ? ` <em>(${i.persona})</em>` : ''}</span>
+        <div style="display: flex; gap: 8px; align-items: baseline;">
+          <span class="qty">${i.quantity}x</span>
+          <span class="name">${i.name}${i.persona && i.persona !== 'Orden 1' ? ` <em>(${i.persona})</em>` : ''}</span>
+        </div>
+        ${i.itemNote ? `<div style="margin-left: 40px; font-size: 16px; font-weight: bold; padding: 2px 4px; border: 1px solid #000; display: inline-block; margin-top: 4px;">📝 ${i.itemNote}</div>` : ''}
       </div>`
       )
       .join('');
@@ -56,7 +59,7 @@ export function printKitchenNote(order) {
         .header .time { font-size: 15px; }
         .badge { text-align: center; font-size: 20px; font-weight: 900; background: #000; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 8px 0; letter-spacing: 1px; }
         .dest-line { font-size: 16px; padding: 2px 4px; font-weight: bold; }
-        .item { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 2px dashed #000; }
+        .item { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 2px dashed #000; }
         .qty { font-size: 26px; font-weight: 900; min-width: 32px; }
         .name { font-size: 18px; font-weight: bold; }
         .nota { margin-top: 10px; padding: 8px; border: 3px dashed #000; font-size: 16px; background: #fffde7; font-weight: bold; }

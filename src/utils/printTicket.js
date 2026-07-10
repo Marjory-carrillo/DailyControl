@@ -12,7 +12,7 @@ export function printTicket(order, config = {}) {
       </div>
     `;
     html += order.items.map(i => `
-      <div style="display:flex; flex-direction:column; margin-bottom:8px; line-height:1.2;">
+      <div style="display:flex; flex-direction:column; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #aaa; line-height:1.2;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
           <div style="flex:1; padding-right:8px; word-break:break-word;">
             ${i.quantity}x ${i.name}
@@ -21,7 +21,8 @@ export function printTicket(order, config = {}) {
             $${(i.price * i.quantity).toFixed(2)}
           </div>
         </div>
-        ${i.persona ? `<div style="font-size:13px; color:#555; font-weight:normal; margin-left:20px; margin-top:2px;">↳ ${i.persona}</div>` : ''}
+        ${i.itemNote ? `<div style="font-size:13px; color:#000; font-weight:normal; margin-left:20px; margin-top:2px;">↳ ${i.itemNote}</div>` : ''}
+        ${i.persona && i.persona !== 'Orden 1' ? `<div style="font-size:12px; color:#555; font-weight:normal; margin-left:20px; margin-top:2px;">(👤 ${i.persona})</div>` : ''}
       </div>
     `).join('');
     return html;
@@ -31,13 +32,13 @@ export function printTicket(order, config = {}) {
   const renderPersonaSummary = () => {
     const personas = {};
     order.items.forEach(i => {
-      const p = i.persona || 'General';
+      const p = i.persona || 'Orden 1';
       if (!personas[p]) personas[p] = { items: [], total: 0 };
       personas[p].items.push(i);
       personas[p].total += i.price * i.quantity;
     });
     const keys = Object.keys(personas);
-    if (keys.length <= 1 && keys[0] === 'General') return '';
+    if (keys.length <= 1 && (keys[0] === 'General' || keys[0] === 'Orden 1')) return '';
     
     let html = `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #000;">
       <strong style="display:block; margin-bottom:6px; font-size:12px;">DESGLOSE POR PERSONA:</strong>`;
