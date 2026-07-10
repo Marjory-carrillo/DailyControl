@@ -189,7 +189,13 @@ export default function POSView({ employeeInfo }) {
         else openAccs.push(orderData);
         localStorage.setItem('openAccounts', JSON.stringify(openAccs));
         
-        addToast(`Mesa ${tableNumber || orderId} guardada ✓`, 'success');
+        try {
+          printKitchenNote(orderData);
+        } catch (printErr) {
+          console.error('Failed to print kitchen note:', printErr);
+        }
+        
+        addToast(`Mesa ${tableNumber || orderId} guardada y ticket de cocina impreso ✓`, 'success');
       }
 
       setCart([]);

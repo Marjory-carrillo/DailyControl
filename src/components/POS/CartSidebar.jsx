@@ -6,7 +6,7 @@ import { useOrders } from '../../context/OrdersContext';
 
 export default function CartSidebar({ cart, updateQuantity, removeFromCart, updateItemNote, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
   const { config } = useApp();
-  const showToast = useToast();
+  const { addToast } = useToast();
   const { orders = [] } = useOrders() || {};
 
   // Extract unique colonies and streets from order history
@@ -112,9 +112,9 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   const discountAmount = parseFloat(discount) || 0;
   const total = Math.max(0, subtotal - discountAmount + (isDelivery ? parseFloat(deliveryFee) || 0 : 0));
 
-  // Get unique sub-order numbers from cart
-  const subOrders = [...new Set(cart.map(i => i.persona).filter(Boolean))].sort();
-  const hasMultipleOrders = subOrders.length > 0;
+  // Get unique sub-order numbers from cart and current active persona
+  const subOrders = [...new Set([...cart.map(i => i.persona).filter(Boolean), activePersona].filter(Boolean))].sort();
+  const hasMultipleOrders = subOrders.length > 1;
 
   // Totals per sub-order
   const subOrderTotals = {};
@@ -131,6 +131,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   const addSubOrder = () => {
     const next = `Orden ${maxOrderNum + 1}`;
     if (onSetActivePersona) onSetActivePersona(next);
+    addToast(`Comenzando ${next} 📝`, 'success');
   };
 
   const setActive = (p) => {
