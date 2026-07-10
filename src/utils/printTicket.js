@@ -5,26 +5,48 @@ export function printTicket(order, config = {}) {
   const displayId = order.order_number || order.id;
 
   const renderItems = () => {
+    const byPersona = {};
+    order.items.forEach(i => {
+      const p = i.persona || 'Orden 1';
+      if (!byPersona[p]) byPersona[p] = [];
+      byPersona[p].push(i);
+    });
+
     let html = `
       <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; border-bottom:1px solid #000; margin-bottom:6px; padding-bottom:4px;">
         <div style="flex:1;">CANT / DESC</div>
         <div>TOTAL</div>
       </div>
     `;
-    html += order.items.map(i => `
-      <div style="display:flex; flex-direction:column; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #aaa; line-height:1.2;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div style="flex:1; padding-right:8px; word-break:break-word;">
-            ${i.quantity}x ${i.name}
+
+    const personas = Object.keys(byPersona).sort();
+    
+    personas.forEach((p, idx) => {
+      if (personas.length > 1) {
+        html += `<div style="font-size:15px; font-weight:900; background:#eee; padding:4px; margin: 6px 0; text-align:center; border: 1px solid #000;">${p.toUpperCase()}</div>`;
+      }
+      
+      byPersona[p].forEach(i => {
+        html += `
+          <div style="display:flex; flex-direction:column; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #aaa; line-height:1.2;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="flex:1; padding-right:8px; word-break:break-word;">
+                ${i.quantity}x ${i.name}
+              </div>
+              <div style="white-space:nowrap;">
+                $${(i.price * i.quantity).toFixed(2)}
+              </div>
+            </div>
+            ${i.itemNote ? `<div style="font-size:13px; color:#000; font-weight:bold; margin-left:20px; margin-top:2px;">↳ Nota: ${i.itemNote}</div>` : ''}
           </div>
-          <div style="white-space:nowrap;">
-            $${(i.price * i.quantity).toFixed(2)}
-          </div>
-        </div>
-        ${i.itemNote ? `<div style="font-size:13px; color:#000; font-weight:normal; margin-left:20px; margin-top:2px;">↳ ${i.itemNote}</div>` : ''}
-        ${i.persona && i.persona !== 'Orden 1' ? `<div style="font-size:12px; color:#555; font-weight:normal; margin-left:20px; margin-top:2px;">(👤 ${i.persona})</div>` : ''}
-      </div>
-    `).join('');
+        `;
+      });
+      
+      if (idx < personas.length - 1) {
+        html += `<div style="border-bottom: 4px solid #000; margin: 12px 0;"></div>`;
+      }
+    });
+
     return html;
   };
 
@@ -96,8 +118,9 @@ export function printTicket(order, config = {}) {
   };
 
   const renderNote = () => order.note ? `
-    <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #000;">
-      <strong>Nota:</strong> ${order.note}
+    <div style="margin-top:12px; padding:10px; border:2px dashed #000; background:#f9f9f9;">
+      <strong style="display:block; margin-bottom:4px; font-size:14px; text-align:center;">⚠ NOTA GENERAL DE LA ORDEN ⚠</strong>
+      <div style="font-size:14px; text-align:center;">${order.note}</div>
     </div>
   ` : '';
 

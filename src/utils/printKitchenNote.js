@@ -11,19 +11,41 @@ function safeExtract(htmlStr, startTag, endTag) {
 }
 
 export function printKitchenNote(order) {
-  const renderItems = () =>
-    order.items
-      .map(
-        i => `
-      <div class="item">
-        <div style="display: flex; gap: 8px; align-items: baseline;">
-          <span class="qty">${i.quantity}x</span>
-          <span class="name">${i.name}${i.persona && i.persona !== 'Orden 1' ? ` <em>(${i.persona})</em>` : ''}</span>
-        </div>
-        ${i.itemNote ? `<div style="margin-left: 40px; font-size: 16px; font-weight: bold; padding: 2px 4px; border: 1px solid #000; display: inline-block; margin-top: 4px;">📝 ${i.itemNote}</div>` : ''}
-      </div>`
-      )
-      .join('');
+  const renderItems = () => {
+    const byPersona = {};
+    order.items.forEach(i => {
+      const p = i.persona || 'Orden 1';
+      if (!byPersona[p]) byPersona[p] = [];
+      byPersona[p].push(i);
+    });
+
+    const personas = Object.keys(byPersona).sort();
+    let html = '';
+
+    personas.forEach((p, idx) => {
+      if (personas.length > 1) {
+        html += `<div style="font-size:20px; font-weight:900; background:#000; color:#fff; padding:4px; margin: 8px 0; text-align:center;">--- ${p.toUpperCase()} ---</div>`;
+      }
+      
+      byPersona[p].forEach(i => {
+        html += `
+          <div class="item">
+            <div style="display: flex; gap: 8px; align-items: baseline;">
+              <span class="qty">${i.quantity}x</span>
+              <span class="name">${i.name}</span>
+            </div>
+            ${i.itemNote ? `<div style="margin-left: 40px; font-size: 16px; font-weight: bold; padding: 2px 4px; border: 1px solid #000; display: inline-block; margin-top: 4px;">📝 ${i.itemNote}</div>` : ''}
+          </div>
+        `;
+      });
+      
+      if (idx < personas.length - 1) {
+        html += `<div style="border-bottom: 4px solid #000; margin: 12px 0;"></div>`;
+      }
+    });
+
+    return html;
+  };
 
   const renderDestino = () => {
     if (order.delivery) {
@@ -45,7 +67,10 @@ export function printKitchenNote(order) {
 
   const renderNote = () =>
     order.note
-      ? `<div class="nota"><b>⚠ NOTA:</b> ${order.note}</div>`
+      ? `<div class="nota">
+           <div style="text-align:center; font-size:18px; margin-bottom:4px;">⚠ NOTA GENERAL DE LA ORDEN ⚠</div>
+           <div style="text-align:center;">${order.note}</div>
+         </div>`
       : '';
 
   const html = `
