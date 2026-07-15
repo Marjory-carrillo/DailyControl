@@ -60,12 +60,13 @@ function IngredientesTab() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const costoPorPorcion = (form.precio && form.porciones && parseFloat(form.porciones) > 0)
-    ? (parseFloat(form.precio) / parseFloat(form.porciones)).toFixed(3) : null;
+  const parsePorciones = form.porciones ? parseFloat(form.porciones) : 1;
+  const costoPorPorcion = (form.precio && parsePorciones > 0)
+    ? (parseFloat(form.precio) / parsePorciones).toFixed(3) : null;
 
   const handleSave = async () => {
-    if (!form.nombre.trim() || !form.precio || !form.porciones) {
-      addToast('Llena todos los campos.', 'error'); return;
+    if (!form.nombre.trim() || !form.precio) {
+      addToast('Llena el nombre y el precio.', 'error'); return;
     }
     setSaving(true);
     try {
@@ -73,7 +74,7 @@ function IngredientesTab() {
         nombre: form.nombre.trim(),
         unidad: form.unidad,
         precio: parseFloat(form.precio),
-        porciones: parseFloat(form.porciones),
+        porciones: form.porciones ? parseFloat(form.porciones) : 1,
       };
       if (editId) {
         await updateIngrediente(editId, payload);
@@ -123,13 +124,13 @@ function IngredientesTab() {
             <input style={inp} type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
           </div>
           <div>
-            <label style={lbl}>¿Cuántas unidades de uso rinde por {form.unidad}?</label>
-            <input style={inp} type="number" min="0.001" step="any" placeholder="Ej: 1000 si usas en gramos, o 1 si usas por kg entero" value={form.porciones} onChange={e => setForm(f => ({ ...f, porciones: e.target.value }))} />
+            <label style={lbl}>¿Cuántas unidades de uso rinde? (Opcional)</label>
+            <input style={inp} type="number" min="0.001" step="any" placeholder="Ej: 1000 para usar por gramo (Dejar vacío = Rinde 1)" value={form.porciones} onChange={e => setForm(f => ({ ...f, porciones: e.target.value }))} />
             <span style={{ fontSize: '0.75rem', color: '#888', display: 'block', marginTop: '4px', lineHeight: '1.3' }}>
-              {form.unidad === 'kg' && "💡 Ej: Si quieres usarlo por Gramo en tus recetas, pon 1000. Si lo usas por Kilo entero, pon 1."}
-              {form.unidad === 'litro' && "💡 Ej: Si quieres usarlo por Mililitro (ml), pon 1000. Si lo usas por Litro entero, pon 1."}
-              {form.unidad === 'pieza' && "💡 Ej: Si compras una caja de 100 piezas y las usas de 1 en 1, pon 100."}
-              {form.unidad !== 'kg' && form.unidad !== 'litro' && form.unidad !== 'pieza' && "💡 Pon la cantidad de porciones o unidades de medida que rinde este empaque."}
+              {form.unidad === 'kg' && "💡 Si no sabes cuánto rinde, déjalo vacío o pon 1. Si quieres usarlo por gramo, pon 1000."}
+              {form.unidad === 'litro' && "💡 Si no sabes cuánto rinde, déjalo vacío o pon 1. Si quieres usarlo por mililitro (ml), pon 1000."}
+              {form.unidad === 'pieza' && "💡 Ej: Si compras una bolsa de 100 y usas de 1 en 1, pon 100. De lo contrario, déjalo vacío o pon 1."}
+              {form.unidad !== 'kg' && form.unidad !== 'litro' && form.unidad !== 'pieza' && "💡 Si no sabes cuánto rinde, déjalo vacío (se calculará como 1 unidad de uso)."}
             </span>
             {costoPorPorcion && (
               <p style={{ margin: '6px 0 0', fontSize: '0.82rem', color: '#27ae60', fontWeight: '700' }}>
