@@ -483,115 +483,166 @@ function RecetasTab() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '20px', height: '100%' }}>
+    <div style={{ display: 'flex', gap: '20px', height: '100%', flexWrap: 'wrap', overflow: 'hidden' }}>
       {/* Product list */}
-      <div style={{ width: '220px', minWidth: '190px', display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
-        <div className="glass-panel" style={{ padding: '16px' }}>
-          <p style={{ margin: '0 0 10px', fontSize: '0.78rem', fontWeight: '700', color: '#999', textTransform: 'uppercase' }}>Productos del Menú</p>
-          {products.map(p => {
-            const c = getCostoReceta(p.id);
-            const hasReceta = !!getRecetaByProduct(p.id);
-            const mg = p.price > 0 && hasReceta ? ((p.price - c) / p.price * 100) : null;
-            return (
-              <button key={p.id} onClick={() => { setSelectedProduct(p.id); setEditing(false); }}
-                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: selectedProduct === p.id ? 'var(--primary-color)' : 'transparent', color: selectedProduct === p.id ? 'white' : '#333', marginBottom: '4px', fontWeight: '600', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>{p.image} {p.name}</span>
-                {mg !== null && <Pill color={selectedProduct === p.id ? 'white' : (mg >= 50 ? '#27ae60' : '#e74c3c')}>{mg.toFixed(0)}%</Pill>}
-              </button>
-            );
-          })}
+      <div style={{ flex: '0 0 250px', minWidth: '220px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="glass-panel" style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <p style={{ margin: '0 0 14px 0', fontSize: '0.8rem', fontWeight: '800', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            🛒 Productos del Menú
+          </p>
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+            {products.map(p => {
+              const c = getCostoReceta(p.id);
+              const hasReceta = !!getRecetaByProduct(p.id);
+              const mg = p.price > 0 && hasReceta ? ((p.price - c) / p.price * 100) : null;
+              const isSelected = selectedProduct === p.id;
+              return (
+                <button key={p.id} onClick={() => { setSelectedProduct(p.id); setEditing(false); }}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                    background: isSelected ? 'var(--primary-color)' : 'rgba(0,0,0,0.02)',
+                    color: isSelected ? 'white' : '#333',
+                    transition: 'all 0.2s',
+                    fontWeight: '600', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    boxShadow: isSelected ? '0 4px 12px rgba(231,76,60,0.2)' : 'none',
+                    border: isSelected ? '1px solid transparent' : '1px solid rgba(0,0,0,0.04)'
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{p.image}</span>
+                    <span>{p.name}</span>
+                  </span>
+                  {mg !== null && (
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: '800', padding: '2px 8px', borderRadius: '20px',
+                      background: isSelected ? 'rgba(255,255,255,0.2)' : (mg >= 50 ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)'),
+                      color: isSelected ? 'white' : (mg >= 50 ? '#27ae60' : '#e74c3c'),
+                    }}>{mg.toFixed(0)}%</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
-
+ 
       {/* Recipe detail / editor */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', minWidth: '280px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '320px', height: '100%', overflowY: 'auto' }}>
         {prod && (
           <>
-            {/* Cost summary */}
-            <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px,1fr))', gap: '12px' }}>
+            {/* Cost summary card */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px,1fr))', gap: '16px', flexShrink: 0 }}>
               <StatBox label="Precio de venta" value={`$${prod.price.toFixed(2)}`} color="#333" />
               <StatBox label="Costo de receta" value={`$${costo.toFixed(2)}`} color="#e74c3c" />
-              <StatBox label="Ganancia / pieza" value={`$${ganancia.toFixed(2)}`} color="#27ae60" />
-              <StatBox label="Margen" value={`${margen.toFixed(1)}%`} color={margenColor} sub={margen >= 60 ? '✅ Excelente' : margen >= 40 ? '⚠️ Aceptable' : receta ? '🔴 Bajo' : 'Sin receta'} />
+              <StatBox label="Ganancia / taco" value={`$${ganancia.toFixed(2)}`} color="#27ae60" />
+              <StatBox label="Margen neto" value={`${margen.toFixed(1)}%`} color={margenColor} sub={margen >= 60 ? '✅ Excelente' : margen >= 40 ? '⚠️ Aceptable' : receta ? '🔴 Bajo' : 'Sin receta'} />
             </div>
-
-            {/* Lines */}
-            <div className="glass-panel" style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h3 style={{ margin: 0, fontSize: '0.95rem' }}>🌮 Receta: {prod.image} {prod.name}</h3>
+ 
+            {/* Lines of recipe card */}
+            <div className="glass-panel" style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '300px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexShrink: 0 }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#333' }}>
+                  🧾 Receta: <span style={{ fontSize: '1.4rem' }}>{prod.image}</span> <strong>{prod.name}</strong>
+                </h3>
                 {!editing && (
-                  <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.85rem' }} onClick={startEdit}>
-                    <Pencil size={14} /> {receta ? 'Editar receta' : 'Crear receta'}
+                  <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', fontSize: '0.88rem' }} onClick={startEdit}>
+                    <Pencil size={15} /> {receta ? 'Editar Receta' : 'Crear Receta'}
                   </button>
                 )}
               </div>
-
-              {!editing && (!receta || !receta.lines || receta.lines.length === 0) && (
-                <div style={{ textAlign: 'center', color: '#ccc', padding: '40px' }}>
-                  <AlertTriangle size={40} style={{ opacity: 0.3, marginBottom: '10px' }} />
-                  <p>Este producto no tiene receta aún.<br />Haz clic en "Crear receta" para comenzar.</p>
-                </div>
-              )}
-
-              {!editing && receta && receta.lines && receta.lines.map((l, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(0,0,0,0.02)', borderRadius: '10px', marginBottom: '6px', fontSize: '0.9rem' }}>
-                  <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Pill color={l.source === 'ingrediente' ? '#0984e3' : '#6c5ce7'}>{l.source === 'ingrediente' ? 'Ingrediente' : 'Preparación'}</Pill>
-                    {getLineName(l)}
-                  </span>
-                  <span style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <span style={{ color: '#888', fontSize: '0.82rem' }}>{l.qty} porc.</span>
-                    <span style={{ color: '#e74c3c', fontWeight: '700' }}>−${linePreviewCost(l).toFixed(3)}</span>
-                  </span>
-                </div>
-              ))}
-
-              {/* Edit mode */}
-              {editing && (
-                <>
-                  {lines.map((l, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '8px', padding: '10px 14px', background: 'rgba(0,0,0,0.02)', borderRadius: '10px', marginBottom: '6px', alignItems: 'center', fontSize: '0.88rem' }}>
-                      <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Pill color={l.source === 'ingrediente' ? '#0984e3' : '#6c5ce7'}>{l.source === 'ingrediente' ? 'Ing' : 'Prep'}</Pill>
-                        {getLineName(l)}
-                      </span>
-                      <span style={{ color: '#888' }}>{l.qty} porc.</span>
-                      <span style={{ color: '#e74c3c', fontWeight: '700' }}>−${linePreviewCost(l).toFixed(3)}</span>
-                      <button onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#e74c3c', padding: '4px' }}><Trash2 size={13} /></button>
-                    </div>
-                  ))}
-                  {!addLine && (
-                    <button onClick={() => setAddLine(true)} style={{ background: 'transparent', border: '2px dashed rgba(0,0,0,0.15)', borderRadius: '10px', padding: '10px', cursor: 'pointer', color: '#888', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '10px' }}>
-                      <Plus size={14} /> Agregar ingrediente o preparación
-                    </button>
-                  )}
-                  {addLine && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto auto', gap: '8px', padding: '10px', background: '#fff9e6', borderRadius: '10px', border: '2px dashed #f39c12', alignItems: 'center', marginBottom: '10px' }}>
-                      <select style={inp} value={newLine.source_id} onChange={e => {
-                        const src = allSources.find(s => s.value === e.target.value);
-                        setNewLine(l => ({ ...l, source_id: e.target.value, source: src?.source || 'ingrediente' }));
-                      }}>
-                        <option value="">— Selecciona —</option>
-                        {allSources.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                      </select>
-                      <input style={inp} type="number" min="0.1" step="0.1" placeholder="Porciones" value={newLine.qty} onChange={e => setNewLine(l => ({ ...l, qty: e.target.value }))} />
-                      <button onClick={handleAddLine} style={{ background: '#27ae60', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 12px', cursor: 'pointer' }}><Check size={15} /></button>
-                      <button onClick={() => setAddLine(false)} style={{ background: 'transparent', border: '1px solid #ddd', borderRadius: '8px', padding: '10px 12px', cursor: 'pointer' }}><X size={15} /></button>
-                    </div>
-                  )}
-                  {lines.length > 0 && (
-                    <div style={{ background: 'rgba(39,174,96,0.08)', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '0.88rem', color: '#555' }}>Costo total de receta:</span>
-                      <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#27ae60' }}>${totalEditCost.toFixed(3)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn-primary" style={{ flex: 1, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }} onClick={handleSave} disabled={saving}>
-                      {saving ? <Loader2 size={15} /> : <Check size={15} />} Guardar Receta
-                    </button>
-                    <button onClick={() => setEditing(false)} style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'transparent', cursor: 'pointer' }}><X size={15} /></button>
+ 
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {!editing && (!receta || !receta.lines || receta.lines.length === 0) && (
+                  <div style={{ textAlign: 'center', color: '#ccc', padding: '60px 20px' }}>
+                    <AlertTriangle size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                    <p style={{ margin: 0, fontSize: '0.95rem' }}>Este producto no tiene receta aún.</p>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#aaa' }}>Haz clic en "Crear Receta" para agregar los insumos.</p>
                   </div>
-                </>
+                )}
+ 
+                {/* View Mode lines */}
+                {!editing && receta && receta.lines && receta.lines.map((l, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.03)' }}>
+                    <span style={{ fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem' }}>
+                      <Pill color={l.source === 'ingrediente' ? '#0984e3' : '#6c5ce7'}>{l.source === 'ingrediente' ? 'Ingrediente' : 'Preparación'}</Pill>
+                      {getLineName(l)}
+                    </span>
+                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                      <span style={{ color: '#666', fontSize: '0.88rem', fontWeight: '600' }}>{l.qty} porciones</span>
+                      <span style={{ color: '#e74c3c', fontWeight: '800', fontSize: '0.95rem' }}>−${linePreviewCost(l).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+ 
+                {/* Edit Mode lines */}
+                {editing && (
+                  <>
+                    {lines.map((l, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontWeight: '700', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Pill color={l.source === 'ingrediente' ? '#0984e3' : '#6c5ce7'}>{l.source === 'ingrediente' ? 'Ing' : 'Prep'}</Pill>
+                            {getLineName(l)}
+                          </span>
+                          <span style={{ color: '#777', fontSize: '0.8rem' }}>Cantidad: <strong>{l.qty} porc.</strong></span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          <span style={{ color: '#e74c3c', fontWeight: '800', fontSize: '0.92rem' }}>−${linePreviewCost(l).toFixed(2)}</span>
+                          <button onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ccc', padding: '6px', borderRadius: '6px', transition: 'color 0.2s' }}><Trash2 size={15} /></button>
+                        </div>
+                      </div>
+                    ))}
+ 
+                    {!addLine && (
+                      <button onClick={() => setAddLine(true)} style={{ background: 'transparent', border: '2px dashed rgba(0,0,0,0.12)', borderRadius: '12px', padding: '12px', cursor: 'pointer', color: '#888', fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '10px', fontWeight: '700', transition: 'all 0.2s' }}>
+                        <Plus size={16} /> Agregar Insumo o Preparación
+                      </button>
+                    )}
+ 
+                    {addLine && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: '#fff9e6', borderRadius: '12px', border: '2px dashed #f39c12', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+                          <div style={{ flex: 2, minWidth: '180px' }}>
+                            <label style={{ ...lbl, color: '#b97a00' }}>Insumo o Preparación</label>
+                            <select style={inp} value={newLine.source_id} onChange={e => {
+                              const src = allSources.find(s => s.value === e.target.value);
+                              setNewLine(l => ({ ...l, source_id: e.target.value, source: src?.source || 'ingrediente' }));
+                            }}>
+                              <option value="">— Selecciona —</option>
+                              {allSources.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                            </select>
+                          </div>
+                          <div style={{ flex: 1, minWidth: '90px' }}>
+                            <label style={{ ...lbl, color: '#b97a00' }}>Cantidad (Porc)</label>
+                            <input style={inp} type="number" min="0.1" step="0.1" placeholder="Ej: 1" value={newLine.qty} onChange={e => setNewLine(l => ({ ...l, qty: e.target.value }))} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button onClick={handleAddLine} style={{ background: '#27ae60', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}><Check size={16} /> Agregar</button>
+                          <button onClick={() => { setAddLine(false); setNewLine({ source: 'ingrediente', source_id: '', qty: '' }); }} style={{ background: 'transparent', border: '1px solid #ddd', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}><X size={16} /> Cancelar</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+ 
+              {/* Edit Mode Actions */}
+              {editing && (
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
+                  {lines.length > 0 && (
+                    <div style={{ background: 'rgba(39,174,96,0.08)', borderRadius: '12px', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <span style={{ fontSize: '0.9rem', color: '#444', fontWeight: '600' }}>Costo Total de Receta:</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#27ae60' }}>${totalEditCost.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn-primary" style={{ flex: 1, padding: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }} onClick={handleSave} disabled={saving}>
+                      {saving ? <Loader2 size={16} className="spin" /> : <Check size={16} />} Guardar Receta
+                    </button>
+                    <button onClick={() => setEditing(false)} style={{ padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}><X size={16} /></button>
+                  </div>
+                </div>
               )}
             </div>
           </>
