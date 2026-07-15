@@ -6,6 +6,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { OrdersProvider, useOrders } from './context/OrdersContext';
 import { FinanzasProvider } from './context/FinanzasContext';
+import { CosteoProvider } from './context/CosteoContext';
 import { supabase } from './lib/supabaseClient';
 
 import POSView from './components/POS/POSView';
@@ -181,15 +182,17 @@ export default function App() {
     <AppProvider>
       <OrdersProvider restaurantId={session.restaurant_id}>
         <FinanzasProvider>
-          <ToastProvider>
-            {session.role === 'admin' ? (
-              <AppShell onLogout={handleLogout} session={session} />
-            ) : session.role === 'mesero' ? (
-              <MeseroView onLogout={handleLogout} employeeInfo={session.employeeInfo} />
-            ) : (
-              <DeliveryView onLogout={handleLogout} />
-            )}
-          </ToastProvider>
+          <CosteoProvider restaurantId={session.restaurant_id}>
+            <ToastProvider>
+              {session.role === 'admin' ? (
+                <AppShell onLogout={handleLogout} session={session} />
+              ) : session.role === 'mesero' ? (
+                <MeseroView onLogout={handleLogout} employeeInfo={session.employeeInfo} />
+              ) : (
+                <DeliveryView onLogout={handleLogout} />
+              )}
+            </ToastProvider>
+          </CosteoProvider>
         </FinanzasProvider>
       </OrdersProvider>
     </AppProvider>
