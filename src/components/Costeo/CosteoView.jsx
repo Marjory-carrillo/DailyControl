@@ -808,6 +808,210 @@ function MargenesTab() {
   );
 }
 
+// ── Tab 6: Rendimiento ────────────────────────────────────────────────────────
+function RendimientoTab() {
+  const { products } = useApp();
+  const { orders } = useOrders();
+  const { ingredientes, preparaciones, recetas } = useCosteo();
+  
+  const [range, setRange] = useState('semana'); // hoy, semana, mes, 30d
+  const [userInput, setUserInput] = useState({}); // { ingredienteId: '5' }
+
+  // 1. Filter orders based on date range
+  const filteredOrders = useMemo(() => {
+    const now = new Date();
+    let startTime = 0;
+    if (range === 'hoy') {
+      startTime = new Date().setHours(0,0,0,0);
+    } else if (range === 'semana') {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      startTime = new Date(now.setDate(diff)).setHours(0,0,0,0);
+    } else if (range === 'mes') {
+      startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    } else if (range === '30d') {
+      startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+    }
+
+    return orders.filter(o => 
+      o.timestamp >= startTime && 
+      (o.status === 'paid' || o.status === 'entregado')
+    );
+  }, [orders, range]);
+
+  // 2. Count products sold in filtered orders
+  const productSales = useMemo(() => {
+    const counts = {};
+    filteredOrders.forEach(o => {
+      if (Array.isArray(o.items)) {
+        o.items.forEach(item => {
+          if (item?.id) {
+            counts[item.id] = (counts[item.id] || 0) + (item.quantity || 1);
+          }
+        });
+      }
+    });
+    return counts;
+  }, [filteredOrders]);
+
+  // Helper function to check if a product uses an ingredient (directly or indirectly)
+  // returns the multiplier factor (how many portions of ingredient per product)
+  const getIngredientUsageInProduct = (productId, ingredientId) => {
+    const recipe = recetas.find(r => String(r.product_id) === String(productId));
+    if (!recipe || !recipe.lines) return 0;
+
+    let totalUsage = 0;
+
+    recipe.lines.forEach(line => {
+      if (line.source === 'ingrediente' && String(line.source_id) === String(ingredientId)) {
+        totalUsage += line.qty;
+      } else if (line.source === 'preparacion') {
+        const prep = preparaciones.find(p => String(p.id) === String(line.source_id));
+        if (prep && prep.ingredientes) {
+          const usageInPrep = prep.ingredientes.reduce((sum, pl) => {
+            if (pl.source === 'ingrediente' && String(pl.source_id) === String(ingredientId)) {
+              return sum + (pl.cantidad * line.qty) / (prep.porciones || 1);
+            }
+            return sum;
+          }, 0);
+          totalUsage += usageInPrep;
+        }
+      }
+    });
+
+    return totalUsage;
+  };
+
+  // 3. For each ingredient, calculate total products sold that use it, and theoretical usage
+  const ingredientStats = useMemo(() => {
+    return ingredientes.map(ing => {
+      let totalTacosSold = 0;
+      let theoreticalQty = 0;
+
+      products.forEach(p => {
+        const factor = getIngredientUsageInProduct(p.id, ing.id);
+        const qtySold = productSales[p.id] || 0;
+        if (factor > 0 && qtySold > 0) {
+          totalTacosSold += qtySold;
+          theoreticalQty += factor * qtySold;
+        }
+      });
+
+      return {
+        ...ing,
+        totalTacosSold,
+        theoreticalQty
+      };
+    });
+  }, [ingredientes, products, productSales, recetas, preparaciones]);
+
+  const handleInputChange = (id, val) => {
+    setUserInput(prev => ({ ...prev, [id]: val }));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto' }}>
+      {/* Date range header */}
+      <div className="glass-panel" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>📈 Rendimiento Real por Ventas</h3>
+          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#888' }}>
+            Ingresa cuánto compraste o utilizaste de cada insumo y el sistema calculará tu rendimiento basado en las ventas reales cobradas.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.05)', padding: '3px', borderRadius: '10px' }}>
+          {[
+            { id: 'hoy', label: 'Hoy' },
+            { id: 'semana', label: 'Esta Semana' },
+            { id: 'mes', label: 'Este Mes' },
+            { id: '30d', label: 'Últimos 30 días' },
+          ].map(r => (
+            <button key={r.id} onClick={() => setRange(r.id)} style={{
+              padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', fontWeight: '700', fontSize: '0.8rem',
+              background: range === r.id ? 'var(--primary-color)' : 'transparent',
+              color: range === r.id ? 'white' : '#666',
+            }}>{r.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <div className="glass-panel" style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
+        {ingredientStats.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#aaa' }}>Carga ingredientes y recetas para usar este módulo.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.5fr 2fr', gap: '12px', padding: '6px 12px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#999' }}>
+              <span>INSUMO</span><span>TACOS VENDIDOS</span><span>CANTIDAD REAL USADA</span><span>RENDIMIENTO REAL CALCULADO</span>
+            </div>
+            
+            {ingredientStats.map(ing => {
+              const userVal = userInput[ing.id] || '';
+              const realUsed = parseFloat(userVal) || 0;
+              const yieldTacos = realUsed > 0 ? ing.totalTacosSold / realUsed : null;
+              const realCostPerTaco = yieldTacos > 0 ? ing.precio / yieldTacos : null;
+              const theoreticalUnits = ing.porciones > 0 ? ing.theoreticalQty / ing.porciones : 0;
+
+              return (
+                <div key={ing.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.5fr 2fr', gap: '12px', padding: '16px 12px', background: 'white', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', alignItems: 'center' }}>
+                  {/* Name and unit */}
+                  <div>
+                    <span style={{ fontWeight: '700', fontSize: '0.92rem', display: 'block' }}>{ing.nombre}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#aaa' }}>Compra: {ing.unidad} | Precio: ${ing.precio.toFixed(2)}</span>
+                  </div>
+
+                  {/* Tacos sold */}
+                  <div>
+                    <span style={{ fontSize: '1rem', fontWeight: '800', color: ing.totalTacosSold > 0 ? 'var(--primary-color)' : '#999' }}>
+                      {ing.totalTacosSold} tacos
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#aaa' }}>
+                      Consumo teórico: {theoreticalUnits.toFixed(2)} {ing.unidad}
+                    </span>
+                  </div>
+
+                  {/* Input field */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input 
+                      style={{ ...inp, padding: '8px 10px', fontSize: '0.88rem', width: '90px', display: 'inline-block' }} 
+                      type="number" 
+                      min="0.01" 
+                      step="any" 
+                      placeholder="Ej: 5" 
+                      value={userVal} 
+                      onChange={e => handleInputChange(ing.id, e.target.value)} 
+                    />
+                    <span style={{ fontSize: '0.85rem', color: '#555', fontWeight: '600' }}>{ing.unidad}</span>
+                  </div>
+
+                  {/* Calculated results */}
+                  <div>
+                    {yieldTacos !== null ? (
+                      <div style={{ background: 'rgba(39,174,96,0.06)', border: '1px solid rgba(39,174,96,0.2)', borderRadius: '10px', padding: '8px 12px' }}>
+                        <span style={{ display: 'block', fontSize: '0.9rem', fontWeight: '800', color: '#27ae60' }}>
+                          🎯 {yieldTacos.toFixed(1)} tacos / {ing.unidad}
+                        </span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: '#555', marginTop: '2px' }}>
+                          Costo real de este insumo: <strong>${realCostPerTaco.toFixed(2)} por taco</strong>
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '0.82rem', color: '#aaa', fontStyle: 'italic' }}>
+                        Escribe la cantidad usada para calcular
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function CosteoView() {
   const { loading } = useCosteo();
@@ -818,6 +1022,7 @@ export default function CosteoView() {
     { id: 'preparaciones', label: '🍳 Preparaciones', icon: <Flame size={15} /> },
     { id: 'recetas', label: '🌮 Recetas', icon: <ChefHat size={15} /> },
     { id: 'lotes', label: '📋 Lotes', icon: <ClipboardList size={15} /> },
+    { id: 'rendimiento', label: '📈 Rendimiento', icon: <TrendingUp size={15} /> },
     { id: 'margenes', label: '📊 Márgenes', icon: <BarChart2 size={15} /> },
   ];
 
@@ -855,6 +1060,7 @@ export default function CosteoView() {
         {tab === 'preparaciones' && <PreparacionesTab />}
         {tab === 'recetas'       && <RecetasTab />}
         {tab === 'lotes'         && <LotesTab />}
+        {tab === 'rendimiento'   && <RendimientoTab />}
         {tab === 'margenes'      && <MargenesTab />}
       </div>
     </div>

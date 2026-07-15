@@ -12,7 +12,7 @@ import OpenAccountsModal from './OpenAccountsModal';
 export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder, orders, registerOrderInShift } = useOrders();
+  const { addOrder, updateOrder, deleteOrder, orders, registerOrderInShift } = useOrders();
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,62 +118,73 @@ export default function POSView({ employeeInfo }) {
         status: actionType === 'save' ? 'open' : (deliveryInfo ? 'en_preparacion' : 'paid'),
       };
 
-      // Update Order History
-      if (actionType === 'save' || !openAccountId) {
-        // Enviar a Supabase (sólo si es checkout o estamos guardando un openAccountId por primera vez en Supabase, 
-        // pero vamos a mantener openAccounts en local para mesas, y checkout en Supabase)
-      }
-
-      // 'prepare': imprime comanda para cocina + ticket del cliente si es domicilio
-      if (actionType === 'prepare') {
-        if (tableNumber && !deliveryInfo) {
-          // Es una mesa/barra. No va a la cola de cocina, va directo a cuentas abiertas
-          const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
-          const existingIdx = openAccs.findIndex(a => a.id === orderId);
-          if (existingIdx >= 0) openAccs[existingIdx] = orderData;
-          else openAccs.push(orderData);
-          localStorage.setItem('openAccounts', JSON.stringify(openAccs));
-          
-          try {
-            printKitchenNote(orderData);
-          } catch (printErr) {
-            console.error('Failed to print kitchen note:', printErr);
-          }
-          addToast(`Mesa enviada a Cuentas Abiertas y ticket de pedido impreso ✓`, 'success');
+      let finalOrder;
+      if (actionType === 'save' || (actionType === 'prepare' && tableNumber && !deliveryInfo)) {
+        // Mesa abierta - se guarda/actualiza en Supabase con status 'open'
+        const openOrderData = { ...orderData, status: 'open' };
+        let res;
+        if (openAccountId) {
+          res = await updateOrder(openAccountId, openOrderData);
+          finalOrder = (res && res[0]) ? res[0] : openOrderData;
+          addToast(`Mesa ${tableNumber || openAccountId} actualizada en la nube ✓`, 'success');
         } else {
-          // Flujo normal para llevar o domicilio: va a la cola de cocina
-          const prepOrder = { ...orderData, status: 'en_preparacion' };
-          const savedOrder = await addOrder(prepOrder);
-          const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : prepOrder;
-          
+          res = await addOrder(openOrderData);
+          finalOrder = (res && res[0]) ? res[0] : openOrderData;
+          addToast(`Mesa ${tableNumber} guardada en la nube ✓`, 'success');
+        }
+
+        if (actionType === 'prepare') {
           try {
             printKitchenNote(finalOrder);
           } catch (printErr) {
             console.error('Failed to print kitchen note:', printErr);
           }
-          
-          if (deliveryInfo) {
-            try {
-              // Imprimir ticket del cliente con el número de cuenta si paga por transferencia
-              printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
-            } catch (printErr) {
-              console.error('Failed to print ticket:', printErr);
-            }
+        } else {
+          // Imprimir ticket de mesa guardada
+          try {
+            printKitchenNote(finalOrder);
+          } catch (printErr) {
+            console.error('Failed to print kitchen note:', printErr);
           }
-          addToast(`Comanda enviada a cocina 🍳`, 'success');
         }
-      } else if (actionType === 'checkout') {
-        const savedOrder = await addOrder(orderData); // Guardar en Supabase
-        const finalOrder = (savedOrder && savedOrder[0]) ? savedOrder[0] : orderData;
+      } else if (actionType === 'prepare') {
+        // Llevar o Domicilio - va a la cola de cocina con status 'en_preparacion'
+        const prepOrder = { ...orderData, status: 'en_preparacion' };
+        let res;
+        if (openAccountId) {
+          res = await updateOrder(openAccountId, prepOrder);
+        } else {
+          res = await addOrder(prepOrder);
+        }
+        finalOrder = (res && res[0]) ? res[0] : prepOrder;
 
-        // Actualizar turno local solo si existe (el dispositivo del admin)
+        try {
+          printKitchenNote(finalOrder);
+        } catch (printErr) {
+          console.error('Failed to print kitchen note:', printErr);
+        }
+
+        if (deliveryInfo) {
+          try {
+            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+          } catch (printErr) {
+            console.error('Failed to print ticket:', printErr);
+          }
+        }
+        addToast(`Comanda enviada a cocina 🍳`, 'success');
+      } else if (actionType === 'checkout') {
+        // Cobrar - va con status 'paid'
+        const paidOrder = { ...orderData, status: 'paid' };
+        let res;
+        if (openAccountId) {
+          res = await updateOrder(openAccountId, paidOrder);
+        } else {
+          res = await addOrder(paidOrder);
+        }
+        finalOrder = (res && res[0]) ? res[0] : paidOrder;
+
         if (currentShiftStr) {
           registerOrderInShift(finalOrder);
-        }
-
-        if (openAccountId) {
-          const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
-          localStorage.setItem('openAccounts', JSON.stringify(openAccs.filter(a => a.id !== openAccountId)));
         }
 
         try {
@@ -182,20 +193,6 @@ export default function POSView({ employeeInfo }) {
           console.error('Failed to print ticket:', printErr);
         }
         addToast(`Orden cobrada ✓`, 'success');
-      } else if (actionType === 'save') {
-        const openAccs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
-        const existingIdx = openAccs.findIndex(a => a.id === orderId);
-        if (existingIdx >= 0) openAccs[existingIdx] = orderData;
-        else openAccs.push(orderData);
-        localStorage.setItem('openAccounts', JSON.stringify(openAccs));
-        
-        try {
-          printKitchenNote(orderData);
-        } catch (printErr) {
-          console.error('Failed to print kitchen note:', printErr);
-        }
-        
-        addToast(`Mesa ${tableNumber || orderId} guardada y ticket de cocina impreso ✓`, 'success');
       }
 
       setCart([]);

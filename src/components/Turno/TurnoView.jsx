@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { PlayCircle, StopCircle, Calculator, FileText } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast, useConfirm } from '../../context/ToastContext';
+import { useOrders } from '../../context/OrdersContext';
 
 export default function TurnoView() {
   const { config } = useApp();
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const { orders } = useOrders();
   
   // Current shift State
   const [shift, setShift] = useState(null);
@@ -35,6 +37,38 @@ export default function TurnoView() {
     window.addEventListener('storage', loadData);
     return () => window.removeEventListener('storage', loadData);
   }, []);
+
+  const currentShiftStats = React.useMemo(() => {
+    if (!shift) return { count: 0, efectivo: 0, transferencia: 0, envios: 0, enviosEfectivo: 0 };
+    const openTime = new Date(shift.openedAt).getTime();
+    const shiftOrders = orders.filter(o => 
+      o.timestamp >= openTime && 
+      (o.status === 'paid' || o.status === 'entregado')
+    );
+
+    let count = shiftOrders.length;
+    let efectivo = 0;
+    let transferencia = 0;
+    let envios = 0;
+    let enviosEfectivo = 0;
+
+    shiftOrders.forEach(o => {
+      const deliveryFee = parseFloat(o.delivery?.deliveryFee || 0);
+      const totalVal = parseFloat(o.total || 0);
+      const foodTotal = totalVal - deliveryFee;
+      const method = (o.paymentMethod || 'Efectivo').toLowerCase();
+
+      envios += deliveryFee;
+      if (method === 'efectivo') {
+        efectivo += foodTotal;
+        enviosEfectivo += deliveryFee;
+      } else if (method === 'transferencia') {
+        transferencia += foodTotal;
+      }
+    });
+
+    return { count, efectivo, transferencia, envios, enviosEfectivo };
+  }, [orders, shift]);
 
   const handleOpenShift = (e) => {
     e.preventDefault();
@@ -89,13 +123,18 @@ export default function TurnoView() {
     if (!confirmed) return;
     
     const realCash = parseFloat(efectivoReal) || 0;
-    const totalVentas = shift.ventasEfectivo + shift.ventasTransferencia;
-    const totalEnvios = shift.ventasEnvios || 0;
-    const efectivoEsperado = shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0);
+    const totalVentas = currentShiftStats.efectivo + currentShiftStats.transferencia;
+    const totalEnvios = currentShiftStats.envios;
+    const efectivoEsperado = shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo;
     const diferencia = realCash - efectivoEsperado;
 
     const closedShift = {
       ...shift,
+      orders: currentShiftStats.count,
+      ventasEfectivo: currentShiftStats.efectivo,
+      ventasTransferencia: currentShiftStats.transferencia,
+      ventasEnvios: currentShiftStats.envios,
+      enviosEfectivo: currentShiftStats.enviosEfectivo,
       closedAt: new Date().toISOString(),
       totalVentas,
       totalEnvios,
@@ -189,7 +228,7 @@ export default function TurnoView() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-light)' }}>Órdenes cobradas:</span>
-              <strong>{shift.orders}</strong>
+              <strong>{currentShiftStats.count}</strong>
             </div>
           </div>
 
@@ -202,26 +241,26 @@ export default function TurnoView() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success-color)' }}>
               <span>Ventas Efectivo:</span>
-              <span>+ {formatMoney(shift.ventasEfectivo)}</span>
+              <span>+ {formatMoney(currentShiftStats.efectivo)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9b59b6' }}>
               <span>Transferencias:</span>
-              <span>+ {formatMoney(shift.ventasTransferencia)}</span>
+              <span>+ {formatMoney(currentShiftStats.transferencia)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f39c12' }}>
               <span>Envíos Recaudados:</span>
-              <span>+ {formatMoney(shift.ventasEnvios)}</span>
+              <span>+ {formatMoney(currentShiftStats.envios)}</span>
             </div>
           </div>
 
           <div style={{ background: 'rgba(0,0,0,0.03)', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px' }}>
               <span>Total Ventas:</span>
-              <span>{formatMoney(shift.ventasEfectivo + shift.ventasTransferencia)}</span>
+              <span>{formatMoney(currentShiftStats.efectivo + currentShiftStats.transferencia)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
               <span>Efectivo Físico Esperado:</span>
-              <span>{formatMoney(shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0))}</span>
+              <span>{formatMoney(shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo)}</span>
             </div>
             
             <div style={{ marginTop: '15px', borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '15px' }}>
@@ -236,9 +275,9 @@ export default function TurnoView() {
                 style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--primary-color)', background: 'white', fontFamily: 'inherit', fontSize: '1.1rem', outline: 'none', color: 'var(--primary-color)', fontWeight: 'bold' }}
               />
               {efectivoReal !== '' && (
-                <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '1.05rem', color: (parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0))) >= 0 ? 'var(--success-color)' : 'var(--primary-color)' }}>
-                  Diferencia: {formatMoney(parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0)))} 
-                  {parseFloat(efectivoReal) - (shift.fondoInicial + shift.ventasEfectivo + (shift.enviosEfectivo || 0)) >= 0 ? ' (Sobrante/Exacto)' : ' (Faltante)'}
+                <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '1.05rem', color: (parseFloat(efectivoReal) - (shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo)) >= 0 ? 'var(--success-color)' : 'var(--primary-color)' }}>
+                  Diferencia: {formatMoney(parseFloat(efectivoReal) - (shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo))} 
+                  {parseFloat(efectivoReal) - (shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo) >= 0 ? ' (Sobrante/Exacto)' : ' (Faltante)'}
                 </div>
               )}
             </div>

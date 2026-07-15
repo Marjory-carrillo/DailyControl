@@ -46,13 +46,10 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   const [deliveryClientName, setDeliveryClientName] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(config?.defaultDeliveryFee || 0);
 
-  // Track occupied tables
-  const [occupiedTables, setOccupiedTables] = useState([]);
-
-  React.useEffect(() => {
-    const accs = JSON.parse(localStorage.getItem('openAccounts') || '[]');
-    setOccupiedTables(accs.map(a => a.table).filter(Boolean));
-  }, [loadedAccount, cart.length]);
+  // Track occupied tables dynamically from orders context
+  const occupiedTables = React.useMemo(() => {
+    return orders.filter(o => o.status === 'open').map(o => o.table).filter(Boolean);
+  }, [orders]);
 
   React.useEffect(() => {
     if (loadedAccount) {
