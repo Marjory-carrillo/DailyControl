@@ -123,11 +123,17 @@ function IngredientesTab() {
             <input style={inp} type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
           </div>
           <div>
-            <label style={lbl}>Porciones / tacos que rinde por {form.unidad}</label>
-            <input style={inp} type="number" min="1" step="0.5" placeholder="Ej: 12 tacos por kg" value={form.porciones} onChange={e => setForm(f => ({ ...f, porciones: e.target.value }))} />
+            <label style={lbl}>¿Cuántas unidades de uso rinde por {form.unidad}?</label>
+            <input style={inp} type="number" min="0.001" step="any" placeholder="Ej: 1000 si usas en gramos, o 1 si usas por kg entero" value={form.porciones} onChange={e => setForm(f => ({ ...f, porciones: e.target.value }))} />
+            <span style={{ fontSize: '0.75rem', color: '#888', display: 'block', marginTop: '4px', lineHeight: '1.3' }}>
+              {form.unidad === 'kg' && "💡 Ej: Si quieres usarlo por Gramo en tus recetas, pon 1000. Si lo usas por Kilo entero, pon 1."}
+              {form.unidad === 'litro' && "💡 Ej: Si quieres usarlo por Mililitro (ml), pon 1000. Si lo usas por Litro entero, pon 1."}
+              {form.unidad === 'pieza' && "💡 Ej: Si compras una caja de 100 piezas y las usas de 1 en 1, pon 100."}
+              {form.unidad !== 'kg' && form.unidad !== 'litro' && form.unidad !== 'pieza' && "💡 Pon la cantidad de porciones o unidades de medida que rinde este empaque."}
+            </span>
             {costoPorPorcion && (
-              <p style={{ margin: '5px 0 0', fontSize: '0.82rem', color: '#27ae60', fontWeight: '700' }}>
-                💰 Costo por porción: ${costoPorPorcion}
+              <p style={{ margin: '6px 0 0', fontSize: '0.82rem', color: '#27ae60', fontWeight: '700' }}>
+                💰 Costo por unidad de uso: ${costoPorPorcion}
               </p>
             )}
           </div>
