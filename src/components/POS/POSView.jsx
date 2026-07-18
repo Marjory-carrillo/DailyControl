@@ -288,8 +288,20 @@ export default function POSView({ employeeInfo }) {
           </div>
         )}
 
-        {showOpenAccounts && (
-          <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
+        {showTableMap && (
+          <TableMapModal 
+            onClose={() => setShowTableMap(false)} 
+            onLoadAccount={(acc) => {
+              loadOpenAccount(acc);
+              setShowTableMap(false);
+            }}
+            onStartNewOrder={(tableName) => {
+              setCart([]);
+              setOpenAccountId(null);
+              setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
+              setShowTableMap(false);
+            }}
+          />
         )}
       </div>
     );
