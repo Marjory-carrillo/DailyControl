@@ -49,14 +49,8 @@ export function printKitchenNote(order) {
 
   const renderDestino = () => {
     if (order.delivery) {
-      const { calle, numero, colonia, phone, clientName } = order.delivery;
-      const addr = `${calle || ''} ${numero ? '#' + numero : ''}`.trim();
       return `
         <div class="badge">🛵 DOMICILIO</div>
-        ${colonia ? `<div class="dest-line"><b>Colonia:</b> ${colonia}</div>` : ''}
-        ${addr ? `<div class="dest-line"><b>Dir:</b> ${addr}</div>` : ''}
-        ${clientName ? `<div class="dest-line"><b>Cliente:</b> ${clientName}</div>` : ''}
-        ${phone ? `<div class="dest-line"><b>Tel:</b> ${phone}</div>` : ''}
       `;
     }
     if (order.table) {

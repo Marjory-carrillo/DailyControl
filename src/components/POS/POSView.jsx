@@ -199,10 +199,12 @@ export default function POSView({ employeeInfo, onOpenTab }) {
           registerOrderInShift(finalOrder);
         }
 
-        try {
-          printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
-        } catch (printErr) {
-          console.error('Failed to print ticket:', printErr);
+        if (finalOrder.delivery) {
+          try {
+            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
+          } catch (printErr) {
+            console.error('Failed to print ticket:', printErr);
+          }
         }
         addToast(`Orden cobrada ✓`, 'success');
       }
