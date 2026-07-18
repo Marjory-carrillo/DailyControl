@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingCart, ChefHat, BarChart3, UtensilsCrossed, Settings, Lock, Wallet, ClipboardList, Calculator, TrendingUp } from 'lucide-react';
+import { ShoppingCart, ChefHat, BarChart3, UtensilsCrossed, Settings, Lock, Wallet, ClipboardList, Calculator } from 'lucide-react';
 import './index.css';
 
 import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { OrdersProvider, useOrders } from './context/OrdersContext';
-import { FinanzasProvider } from './context/FinanzasContext';
 import { CosteoProvider } from './context/CosteoContext';
 import { supabase } from './lib/supabaseClient';
 
@@ -16,7 +15,7 @@ import SettingsView from './components/Settings/SettingsView';
 import CajaChicaView from './components/CajaChica/CajaChicaView';
 import TurnoView from './components/Turno/TurnoView';
 import CosteoView from './components/Costeo/CosteoView';
-import FinanzasView from './components/Finanzas/FinanzasView';
+
 import DeliveryView from './components/Delivery/DeliveryView';
 import MeseroView from './components/Staff/MeseroView';
 import KitchenView from './components/Kitchen/KitchenView';
@@ -76,7 +75,6 @@ function AppShell({ onLogout, session }) {
     { id: 'cocina',    label: 'Cocina',   icon: <UtensilsCrossed size={20} />, badge: kitchenCount },
     { id: 'turno',     label: 'Turno',    icon: <ClipboardList size={20} /> },
     { id: 'caja',      label: 'Caja',     icon: <Wallet size={20} /> },
-    { id: 'finanzas',  label: 'Finanzas', icon: <TrendingUp size={20} /> },
     { id: 'costeo',    label: 'Costeo',   icon: <Calculator size={20} /> },
     { id: 'dashboard', label: 'Ventas',   icon: <BarChart3 size={20} /> },
     { id: 'menu',      label: 'Menú',     icon: <UtensilsCrossed size={20} /> },
@@ -105,7 +103,7 @@ function AppShell({ onLogout, session }) {
 
         <div style={{ width: '40px', height: '1px', background: 'rgba(0,0,0,0.1)', margin: '6px 0' }} />
 
-        {/* Finanzas, Costeo, Ventas, Menú, Config — grupo inferior */}
+        {/* Costeo, Ventas, Menú, Config — grupo inferior */}
         {navTabs.slice(4).map(t => (
           <NavItem key={t.id} {...t}
             active={activeTab === t.id}
@@ -121,11 +119,10 @@ function AppShell({ onLogout, session }) {
 
       {/* ── Main Content ── */}
       <main className="glass-panel app-main">
-        {activeTab === 'pos'       && <POSView employeeInfo={session?.employeeInfo} />}
+        {activeTab === 'pos'       && <POSView employeeInfo={session?.employeeInfo} onOpenTab={setActiveTab} />}
         {activeTab === 'cocina'    && <KitchenView />}
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'caja'      && <CajaChicaView />}
-        {activeTab === 'finanzas'  && <FinanzasView />}
         {activeTab === 'menu'      && <MenuEditorView />}
         {activeTab === 'settings'  && <SettingsView restaurantId={session?.restaurant_id} restaurantName={session?.user?.email?.split('@')[0]} onLogout={onLogout} />}
         {activeTab === 'turno'     && <TurnoView />}
@@ -181,19 +178,17 @@ export default function App() {
   return (
     <AppProvider>
       <OrdersProvider restaurantId={session.restaurant_id}>
-        <FinanzasProvider>
-          <CosteoProvider restaurantId={session.restaurant_id}>
-            <ToastProvider>
-              {session.role === 'admin' ? (
-                <AppShell onLogout={handleLogout} session={session} />
-              ) : session.role === 'mesero' ? (
-                <MeseroView onLogout={handleLogout} employeeInfo={session.employeeInfo} />
-              ) : (
-                <DeliveryView onLogout={handleLogout} />
-              )}
-            </ToastProvider>
-          </CosteoProvider>
-        </FinanzasProvider>
+        <CosteoProvider restaurantId={session.restaurant_id}>
+          <ToastProvider>
+            {session.role === 'admin' ? (
+              <AppShell onLogout={handleLogout} session={session} />
+            ) : session.role === 'mesero' ? (
+              <MeseroView onLogout={handleLogout} employeeInfo={session.employeeInfo} />
+            ) : (
+              <DeliveryView onLogout={handleLogout} />
+            )}
+          </ToastProvider>
+        </CosteoProvider>
       </OrdersProvider>
     </AppProvider>
   );

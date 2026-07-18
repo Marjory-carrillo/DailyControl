@@ -9,10 +9,21 @@ import { printKitchenNote } from '../../utils/printKitchenNote';
 import { ShoppingCart, Search, X } from 'lucide-react';
 import TableMapModal from './TableMapModal';
 
-export default function POSView({ employeeInfo }) {
+export default function POSView({ employeeInfo, onOpenTab }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
   const { addOrder, updateOrder, deleteOrder, orders, registerOrderInShift } = useOrders();
+
+  // Guard: check if a shift is open before allowing any cart action
+  const requireShift = () => {
+    const hasShift = !!localStorage.getItem('currentShift');
+    if (!hasShift) {
+      addToast('⚠️ No hay turno abierto. Abriendo Turno...', 'error');
+      if (onOpenTab) onOpenTab('turno');
+      return false;
+    }
+    return true;
+  };
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || null);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,8 +39,9 @@ export default function POSView({ employeeInfo }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Add to cart — now supports persona and unique cartItemId
+  // Add to cart — blocks if no shift is open
   const handleAddToCart = (item) => {
+    if (!requireShift()) return;
     setCart(prev => {
       const persona = activePersona || 'Orden 1';
       // Buscar si ya existe el mismo artículo sin una nota individual para incrementar cantidad
@@ -115,7 +127,7 @@ export default function POSView({ employeeInfo }) {
         time: now.toLocaleTimeString(),
         date: isoDate,
         timestamp: Date.now(),
-        status: actionType === 'save' ? 'open' : (deliveryInfo ? 'en_preparacion' : 'paid'),
+        status: actionType === 'save' ? 'open' : 'paid',
       };
 
       let finalOrder;
@@ -296,6 +308,7 @@ export default function POSView({ employeeInfo }) {
               setShowTableMap(false);
             }}
             onStartNewOrder={(tableName) => {
+              if (!requireShift()) return;
               setOpenAccountId(null);
               setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
               if (!tableName) setCart([]);
@@ -355,6 +368,7 @@ export default function POSView({ employeeInfo }) {
             setShowTableMap(false);
           }}
           onStartNewOrder={(tableName) => {
+            if (!requireShift()) return;
             setOpenAccountId(null);
             setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
             if (!tableName) setCart([]);

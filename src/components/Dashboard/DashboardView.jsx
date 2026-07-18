@@ -318,10 +318,11 @@ export default function DashboardView() {
   // ── filter orders by date range + optional filters
   const filteredOrders = useMemo(() => {
     return allOrders.filter(o => {
+      const isPaidOrDelivered = o.status === 'paid' || o.status === 'entregado';
       const inRange = isDateInRange(o.date || '', dateRange.start, dateRange.end, o.timestamp);
       const matchMesero = filterMesero === 'Todos' || o.mesero === filterMesero;
       const matchMethod = filterMethod === 'Todos' || (o.paymentMethod || 'Efectivo') === filterMethod;
-      return inRange && matchMesero && matchMethod;
+      return isPaidOrDelivered && inRange && matchMesero && matchMethod;
     }).reverse();
   }, [allOrders, dateRange, filterMesero, filterMethod]);
 
