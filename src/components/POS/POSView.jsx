@@ -8,6 +8,7 @@ import { printTicket } from '../../utils/printTicket';
 import { printKitchenNote } from '../../utils/printKitchenNote';
 import { ShoppingCart, Search, X } from 'lucide-react';
 import TableMapModal from './TableMapModal';
+import ActiveDeliveriesModal from './ActiveDeliveriesModal';
 
 export default function POSView({ employeeInfo, onOpenTab }) {
   const { categories, products, config } = useApp();
@@ -30,6 +31,7 @@ export default function POSView({ employeeInfo, onOpenTab }) {
   const [mobileView, setMobileView] = useState('menu');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showTableMap, setShowTableMap] = useState(false);
+  const [showActiveDeliveries, setShowActiveDeliveries] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
   const [activePersona, setActivePersona] = useState('Orden 1'); // current persona for adding items
 
@@ -269,6 +271,10 @@ export default function POSView({ employeeInfo, onOpenTab }) {
                   style={{ background: 'var(--primary-color)', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
                   🗺️ Mesas
                 </button>
+                <button onClick={() => setShowActiveDeliveries(true)}
+                  style={{ background: '#6c5ce7', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
+                  🛵 Envíos
+                </button>
               </div>
               <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '2px' }}>
                 {categories.map(cat => (
@@ -337,6 +343,10 @@ export default function POSView({ employeeInfo, onOpenTab }) {
               style={{ background: 'var(--primary-color)', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
               🗺️ Mesas
             </button>
+            <button onClick={() => setShowActiveDeliveries(true)}
+              style={{ background: '#6c5ce7', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+              🛵 Envíos / Llevar
+            </button>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', flex: '2 1 auto' }}>
             {categories.map(cat => (
@@ -375,6 +385,16 @@ export default function POSView({ employeeInfo, onOpenTab }) {
             setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
             if (!tableName) setCart([]);
             setShowTableMap(false);
+          }}
+        />
+      )}
+
+      {showActiveDeliveries && (
+        <ActiveDeliveriesModal 
+          onClose={() => setShowActiveDeliveries(false)} 
+          onLoadAccount={(acc) => {
+            loadOpenAccount(acc);
+            setShowActiveDeliveries(false);
           }}
         />
       )}
