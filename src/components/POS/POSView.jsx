@@ -296,9 +296,9 @@ export default function POSView({ employeeInfo }) {
               setShowTableMap(false);
             }}
             onStartNewOrder={(tableName) => {
-              setCart([]);
               setOpenAccountId(null);
               setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
+              if (!tableName) setCart([]);
               setShowTableMap(false);
             }}
           />
@@ -355,9 +355,9 @@ export default function POSView({ employeeInfo }) {
             setShowTableMap(false);
           }}
           onStartNewOrder={(tableName) => {
-            setCart([]);
             setOpenAccountId(null);
             setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
+            if (!tableName) setCart([]);
             setShowTableMap(false);
           }}
         />

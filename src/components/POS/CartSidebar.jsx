@@ -261,24 +261,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
               </div>
             </div>
 
-            {/* Table */}
-            {!isDelivery && (
-              <div>
-                <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>🪑 Mesa (opcional)</label>
-                {config?.tables && config.tables.length > 0 ? (
-                  <select value={tableNumber} onChange={e => setTableNumber(e.target.value)} style={inputStyle}>
-                    <option value="">Seleccionar Mesa...</option>
-                    {config.tables.map(t => {
-                      const isOccupied = occupiedTables.includes(t.name);
-                      const isThis = loadedAccount && loadedAccount.table === t.name;
-                      return <option key={t.id} value={t.name} disabled={isOccupied && !isThis}>{t.name}{isOccupied && !isThis ? ' (Ocupada)' : ''}</option>;
-                    })}
-                  </select>
-                ) : (
-                  <input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Ej: Mesa 4" style={inputStyle} />
-                )}
-              </div>
-            )}
+
 
             {/* Delivery Option */}
             {config?.deliveryEnabled && (
