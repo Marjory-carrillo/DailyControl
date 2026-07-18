@@ -81,12 +81,13 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   React.useEffect(() => {
     if (cart.length === 0) {
       setNote(''); setDiscount(''); setPaymentMethod('Efectivo');
-      setTableNumber(''); setIsDelivery(false);
+      setTableNumber(loadedAccount?.table || '');
+      setIsDelivery(false);
       setDeliveryCalle(''); setDeliveryNumero(''); setDeliveryColonia(''); setDeliveryPhone(''); setDeliveryClientName('');
       setDeliveryFee(config?.defaultDeliveryFee || 0);
       if (onSetActivePersona) onSetActivePersona('Orden 1');
     }
-  }, [cart.length]);
+  }, [cart.length, loadedAccount]);
 
   const handleAction = (type) => {
     executeAction(type, null);
@@ -156,7 +157,11 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
       {/* Header */}
       <div style={{ padding: fullHeight ? '14px 16px' : '20px', borderBottom: 'var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <h2 style={{ margin: 0, fontSize: fullHeight ? '1.15rem' : '1.5rem' }}>
-          {loadedAccount ? `Mesa ${loadedAccount.table || loadedAccount.id}` : 'Nueva Orden'}
+          {loadedAccount 
+            ? ((loadedAccount.table || '').toLowerCase().startsWith('mesa') 
+                ? (loadedAccount.table || loadedAccount.id) 
+                : `Mesa ${loadedAccount.table || loadedAccount.id}`) 
+            : 'Nueva Orden'}
         </h2>
         <div style={{ display: 'flex', gap: '6px' }}>
           {/* Add sub-order button */}

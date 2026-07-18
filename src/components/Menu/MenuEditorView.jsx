@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { Plus, Pencil, Trash2, Check, X, UtensilsCrossed, Search } from 'lucide-react';
 
 const EMOJIS = [
-  '🌮','🫔','🌯','🥪','🥟','🍔','🌭','🍗','🥩','🍖',
+  '🌮','🫔','🌯','🥪','🥙','🫓','🥟','🍔','🌭','🍗','🥩','🍖',
   '🧀','🌶️','🫙','🥑','🥤','🍊','🍋','🥛','☕','🧃','🍺','💧',
 ];
 

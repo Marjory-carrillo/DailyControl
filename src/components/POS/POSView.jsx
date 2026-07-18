@@ -6,8 +6,8 @@ import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
 import { printTicket } from '../../utils/printTicket';
 import { printKitchenNote } from '../../utils/printKitchenNote';
-import { ShoppingCart, Search, X, ClipboardList } from 'lucide-react';
-import OpenAccountsModal from './OpenAccountsModal';
+import { ShoppingCart, Search, X } from 'lucide-react';
+import TableMapModal from './TableMapModal';
 
 export default function POSView({ employeeInfo }) {
   const { categories, products, config } = useApp();
@@ -18,7 +18,7 @@ export default function POSView({ employeeInfo }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileView, setMobileView] = useState('menu');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [showOpenAccounts, setShowOpenAccounts] = useState(false);
+  const [showTableMap, setShowTableMap] = useState(false);
   const [loadedAccount, setLoadedAccount] = useState(null);
   const [activePersona, setActivePersona] = useState('Orden 1'); // current persona for adding items
 
@@ -251,9 +251,9 @@ export default function POSView({ employeeInfo }) {
                   <input type="text" placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }} />
                   {searchTerm && <X size={16} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
                 </div>
-                <button onClick={() => setShowOpenAccounts(true)}
+                <button onClick={() => setShowTableMap(true)}
                   style={{ background: 'var(--primary-color)', color: 'white', padding: '0 12px', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.82rem', flexShrink: 0 }}>
-                  <ClipboardList size={16} /> Ctas
+                  🗺️ Mesas
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '2px' }}>
@@ -306,9 +306,9 @@ export default function POSView({ employeeInfo }) {
               <input type="text" placeholder="Buscar producto por nombre..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.1)', background: 'rgba(255,255,255,0.8)', fontFamily: 'inherit', fontSize: '1rem', outline: 'none' }} />
               {searchTerm && <X size={18} onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }} />}
             </div>
-            <button onClick={() => setShowOpenAccounts(true)}
+            <button onClick={() => setShowTableMap(true)}
               style={{ background: 'var(--primary-color)', color: 'white', padding: '0 20px', borderRadius: '14px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-              <ClipboardList size={18} /> Abiertas
+              🗺️ Mesas
             </button>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', flex: '2 1 auto' }}>
@@ -335,8 +335,20 @@ export default function POSView({ employeeInfo }) {
         employeeInfo={employeeInfo}
       />
 
-      {showOpenAccounts && (
-        <OpenAccountsModal onClose={() => setShowOpenAccounts(false)} onLoadAccount={loadOpenAccount} onDeleteAccount={(id) => { if (openAccountId === id) { setCart([]); setOpenAccountId(null); setLoadedAccount(null); } }} />
+      {showTableMap && (
+        <TableMapModal 
+          onClose={() => setShowTableMap(false)} 
+          onLoadAccount={(acc) => {
+            loadOpenAccount(acc);
+            setShowTableMap(false);
+          }}
+          onStartNewOrder={(tableName) => {
+            setCart([]);
+            setOpenAccountId(null);
+            setLoadedAccount(tableName ? { table: tableName, items: [] } : null);
+            setShowTableMap(false);
+          }}
+        />
       )}
     </div>
   );
