@@ -1,11 +1,24 @@
 import React from 'react';
-import { X, Clock, User, ClipboardList, PlusCircle, Bike, ShoppingBag } from 'lucide-react';
+import { X, Clock, User, ClipboardList, PlusCircle, Bike, ShoppingBag, Trash2 } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
 import { useApp } from '../../context/AppContext';
+import { useConfirm } from '../../context/ToastContext';
 
 export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder }) {
-  const { orders } = useOrders();
+  const { orders, deleteOrder } = useOrders();
   const { config } = useApp();
+  const showConfirm = useConfirm();
+
+  const handleDeleteOrder = async (e, id) => {
+    e.stopPropagation(); // Evitar que abra la cuenta al dar clic al botón de borrar
+    const confirmed = await showConfirm('¿Seguro que deseas eliminar esta cuenta sin cobrarla?');
+    if (!confirmed) return;
+    try {
+      await deleteOrder(id);
+    } catch (err) {
+      console.error('Error al eliminar orden:', err);
+    }
+  };
 
   // Active open orders
   const openOrders = orders.filter(o => o.status === 'open');
@@ -186,10 +199,32 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
 
                       {/* Middle row info */}
                       {isOccupied ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#d35400' }}>
-                            ${activeOrder.total?.toFixed(2) || '0.00'}
-                          </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#d35400' }}>
+                              ${activeOrder.total?.toFixed(2) || '0.00'}
+                            </span>
+                            <button
+                              onClick={(e) => handleDeleteOrder(e, activeOrder.id)}
+                              style={{
+                                background: 'rgba(255, 0, 0, 0.05)',
+                                border: '1px solid rgba(255, 0, 0, 0.1)',
+                                borderRadius: '8px',
+                                padding: '6px',
+                                color: '#ff6b6b',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.1)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.05)'}
+                              title="Eliminar Cuenta"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                           <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Clock size={12} /> {activeOrder.time}
                           </span>
@@ -284,13 +319,35 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
                         </span>
                       </div>
                       
-                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span style={{ fontSize: '1rem', fontWeight: '800', color: '#1e293b' }}>
-                          ${acc.total?.toFixed(2) || '0.00'}
-                        </span>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600' }}>
-                          {acc.items.reduce((s,i) => s + i.quantity, 0)} arts
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontSize: '1rem', fontWeight: '800', color: '#1e293b' }}>
+                            ${acc.total?.toFixed(2) || '0.00'}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600' }}>
+                            {acc.items.reduce((s,i) => s + i.quantity, 0)} arts
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => handleDeleteOrder(e, acc.id)}
+                          style={{
+                            background: 'rgba(255, 0, 0, 0.05)',
+                            border: '1px solid rgba(255, 0, 0, 0.1)',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            color: '#ff6b6b',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.05)'}
+                          title="Eliminar Cuenta"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </div>
                   );
