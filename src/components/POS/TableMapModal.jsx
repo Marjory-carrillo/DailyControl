@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Clock, User, ClipboardList, PlusCircle, Bike, ShoppingBag, Trash2 } from 'lucide-react';
+import { X, Clock, User, ClipboardList, PlusCircle, Trash2 } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
 import { useApp } from '../../context/AppContext';
 import { useConfirm } from '../../context/ToastContext';
@@ -31,9 +31,6 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
   const tables = config?.tables || [];
   const occupiedCount = tables.filter(t => !!getTableOrder(t.name)).length;
   const freeCount = tables.length - occupiedCount;
-
-  // Orders without table (e.g. Para Llevar / Domicilio)
-  const noTableOrders = openOrders.filter(o => !o.table);
 
   return (
     <div style={{
@@ -258,104 +255,6 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
               </div>
             )}
           </div>
-
-          {/* Domicilios / Para Llevar Section */}
-          <div>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Bike size={16} /> Pedidos a Domicilio y Para Llevar
-            </h3>
-
-            {noTableOrders.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontStyle: 'italic' }}>
-                No hay envíos ni pedidos para llevar activos.
-              </p>
-            ) : (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                gap: '12px'
-              }}>
-                {noTableOrders.map(acc => {
-                  const isDelivery = !!acc.delivery;
-                  
-                  return (
-                    <div
-                      key={acc.id}
-                      onClick={() => onLoadAccount(acc)}
-                      style={{
-                        padding: '14px',
-                        background: 'rgba(248, 250, 252, 0.6)',
-                        border: '1px solid rgba(0,0,0,0.06)',
-                        borderRadius: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(241, 245, 249, 0.9)';
-                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(248, 250, 252, 0.6)';
-                        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span style={{ fontSize: '0.88rem', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {isDelivery ? <Bike size={14} color="#6c5ce7" /> : <ShoppingBag size={14} color="#e67e22" />}
-                          {isDelivery ? `Envío #${acc.order_number}` : `Llevar #${acc.order_number}`}
-                        </span>
-                        
-                        {isDelivery && acc.delivery.cliente && (
-                          <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600' }}>
-                            👤 {acc.delivery.cliente}
-                          </span>
-                        )}
-                        
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Clock size={12} /> {acc.time}
-                        </span>
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span style={{ fontSize: '1rem', fontWeight: '800', color: '#1e293b' }}>
-                            ${acc.total?.toFixed(2) || '0.00'}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '600' }}>
-                            {acc.items.reduce((s,i) => s + i.quantity, 0)} arts
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => handleDeleteOrder(e, acc.id)}
-                          style={{
-                            background: 'rgba(255, 0, 0, 0.05)',
-                            border: '1px solid rgba(255, 0, 0, 0.1)',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            color: '#ff6b6b',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'background 0.2s'
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.1)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 0, 0, 0.05)'}
-                          title="Eliminar Cuenta"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
         </div>
 
         {/* Footer */}
@@ -363,39 +262,31 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
           padding: '16px 24px',
           borderTop: '1px solid rgba(0,0,0,0.06)',
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           alignItems: 'center',
           background: 'rgba(248, 250, 252, 0.8)',
           flexShrink: 0
         }}>
           <button
-            onClick={() => onStartNewOrder('')}
-            className="btn-primary"
-            style={{
-              background: '#6c5ce7',
-              padding: '12px 20px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.9rem',
-              fontWeight: '700'
-            }}
-          >
-            <PlusCircle size={18} /> Nueva Orden Rápida (Sin Mesa)
-          </button>
-          
-          <button
             onClick={onClose}
             style={{
               background: 'transparent',
               border: '1px solid rgba(0,0,0,0.12)',
-              padding: '12px 20px',
+              padding: '12px 24px',
               borderRadius: '12px',
               cursor: 'pointer',
-              fontSize: '0.9rem',
+              fontSize: '0.95rem',
               fontWeight: '700',
-              color: '#64748b'
+              color: '#64748b',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.03)';
+              e.currentTarget.style.color = '#1e293b';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#64748b';
             }}
           >
             Volver al Menú

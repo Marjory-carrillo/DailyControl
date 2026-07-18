@@ -224,7 +224,7 @@ export default function POSView({ employeeInfo, onOpenTab }) {
     setCart(acc.items);
     setOpenAccountId(acc.id);
     setLoadedAccount(acc);
-    setShowOpenAccounts(false);
+    setShowTableMap(false);
     setMobileView('cart');
     addToast(`Cuenta #${acc.id} cargada.`, 'success');
   };
