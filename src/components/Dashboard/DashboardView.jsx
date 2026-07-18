@@ -26,10 +26,6 @@ const parseDate = (str, timestamp) => {
   if (!str) return new Date();
   if (str instanceof Date) return str;
 
-  // Standard ISO/US parse try
-  const parsed = Date.parse(str);
-  if (!isNaN(parsed)) return new Date(parsed);
-
   if (typeof str === 'string') {
     if (str.includes('-')) {
       const parts = str.split('-');
@@ -52,6 +48,11 @@ const parseDate = (str, timestamp) => {
       return new Date(y, m - 1, d);
     }
   }
+
+  // Standard ISO/US parse try
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) return new Date(parsed);
+
   return new Date();
 };
 
