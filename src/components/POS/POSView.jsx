@@ -324,6 +324,16 @@ export default function POSView({ employeeInfo, onOpenTab }) {
             }}
           />
         )}
+
+        {showActiveDeliveries && (
+          <ActiveDeliveriesModal 
+            onClose={() => setShowActiveDeliveries(false)} 
+            onLoadAccount={(acc) => {
+              loadOpenAccount(acc);
+              setShowActiveDeliveries(false);
+            }}
+          />
+        )}
       </div>
     );
   }
