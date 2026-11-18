@@ -160,9 +160,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    if (session?.role === 'admin') {
-      await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
     localStorage.removeItem('appSession');
     setSession(null);
   };

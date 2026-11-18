@@ -10,7 +10,8 @@ function generateCode(restaurantName = '', role = 'repartidor') {
     .slice(0, 4) || 'NEG';
   const roleTag = role === 'mesero' ? 'M' : 'R';
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const random = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  // Aleatorio seguro; 6 caracteres = ~1,000 millones de combinaciones (difícil de adivinar).
+  const random = Array.from(crypto.getRandomValues(new Uint32Array(6)), n => chars[n % chars.length]).join('');
   return `${prefix}${roleTag}-${random}`;
 }
 

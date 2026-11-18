@@ -79,6 +79,11 @@ export default function LoginView({ onLoginSuccess }) {
 
       let user = signUpData?.user;
 
+      // Usuario creado pero sin sesión = Supabase exige confirmar el correo primero
+      if (!signUpError && user && !signUpData.session) {
+        throw new Error('Te enviamos un correo de confirmación. Ábrelo y luego inicia sesión.');
+      }
+
       // Si el correo ya existe, hacer login directo
       if (signUpError || !user) {
         const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
@@ -101,16 +106,17 @@ export default function LoginView({ onLoginSuccess }) {
     setErrorMsg('');
     setLoading(true);
     try {
-      const code = accessCode.trim().toUpperCase();
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*, restaurants(name)')
-        .eq('access_code', code)
-        .single();
+      // Sesión anónima de Supabase + canje del código: RLS solo deja ver datos de su restaurante.
+      const { error: anonErr } = await supabase.auth.signInAnonymously();
+      if (anonErr) throw new Error('No se pudo conectar. Intenta de nuevo.');
 
-      if (error || !data) throw new Error('Código incorrecto. Verifica con tu empleador.');
+      const { data, error } = await supabase.rpc('claim_employee', { p_code: accessCode });
+      if (error || !data) {
+        await supabase.auth.signOut();
+        throw new Error('Código incorrecto. Verifica con tu empleador.');
+      }
 
-      if (addToast) addToast(`Conectado a ${data.restaurants?.name || 'tu restaurante'} ✓`, 'success');
+      if (addToast) addToast(`Conectado a ${data.restaurant_name || 'tu restaurante'} ✓`, 'success');
       const sessionData = { role: data.role, restaurant_id: data.restaurant_id, employeeInfo: data };
       if (rememberMe) localStorage.setItem('appSession', JSON.stringify(sessionData));
       onLoginSuccess(sessionData);
