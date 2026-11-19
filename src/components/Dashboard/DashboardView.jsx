@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useOrders } from '../../context/OrdersContext';
 import { useTurno } from '../../context/TurnoContext';
 import { printTicket } from '../../utils/printTicket';
+import { esc } from '../../utils/escapeHtml';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -166,19 +167,19 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
 
     const orderRows = dayOrders.map(o => `
       <tr>
-        <td>#${o.id}</td>
-        <td>${o.time || ''}</td>
+        <td>#${esc(o.order_number || o.id)}</td>
+        <td>${esc(o.time)}</td>
         <td>${o.delivery ? '🛵 Dom.' : 'Local'}</td>
         <td style="text-align:right;font-weight:bold;">$${(parseFloat(o.total)||0).toFixed(2)}</td>
-        <td>${o.paymentMethod || 'Efectivo'}</td>
-        <td>${o.mesero || '-'}</td>
+        <td>${esc(o.paymentMethod || 'Efectivo')}</td>
+        <td>${esc(o.mesero || '-')}</td>
       </tr>`).join('');
 
     const cajaRows = dayCaja.map(m => `
       <tr>
         <td style="color:${m.type === 'egreso' ? '#e74c3c' : '#27ae60'}">${m.type === 'egreso' ? 'Egreso' : 'Ingreso'}</td>
-        <td>${m.time || ''}</td>
-        <td>${m.description}</td>
+        <td>${esc(m.time)}</td>
+        <td>${esc(m.description)}</td>
         <td style="text-align:right;font-weight:bold;color:${m.type === 'egreso' ? '#e74c3c' : '#27ae60'}">${m.type === 'egreso' ? '-' : '+'}$${m.amount.toFixed(2)}</td>
       </tr>`).join('');
 
@@ -256,7 +257,7 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
         hr { display: none; }
       }
     </style></head><body>
-    <h1>${businessName}</h1>
+    <h1>${esc(businessName)}</h1>
     <p class="header-sub">Reporte de Ventas: <strong>${dateLabel}</strong><br>Generado: ${new Date().toLocaleString()}</p>
 
     <h2 class="global-title">RESUMEN GLOBAL DEL PERIODO</h2>

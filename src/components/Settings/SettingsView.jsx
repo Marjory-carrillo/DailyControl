@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, AlertTriangle, Printer } from 'lucide-react';
 import DeliveryEmployees from './DeliveryEmployees';
+import { useToast } from '../../context/ToastContext';
 
 const ALL_TABS = [
   { id: 'pos',       label: 'Ventas (POS)' },
@@ -14,7 +15,8 @@ const ALL_TABS = [
 
 export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
   const { config, setConfig } = useApp();
-  const [form, setForm] = useState({ 
+  const showToast = useToast();
+  const [form, setForm] = useState({
     ...config,
     protectedTabs: config.protectedTabs ?? ['dashboard', 'menu', 'settings', 'caja', 'turno'],
     appBackgroundColor: config.appBackgroundColor ?? '#f5f5f7',
@@ -56,6 +58,10 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
   };
 
   const handleSave = () => {
+    if (!/^\d{4,6}$/.test(String(form.ownerPin ?? ''))) {
+      showToast('El PIN debe tener de 4 a 6 números.', 'error');
+      return;
+    }
     // Settings tab is always protected — enforce it
     const finalForm = { 
       ...form, 
@@ -251,6 +257,29 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
             value={form.transferAccount || ''}
             onChange={handleChange}
             placeholder="Ej: CLABE 123456789012345678 o Banco / Cuenta XXXX"
+          />
+        </div>
+
+        {/* Owner PIN */}
+        <div style={sectionStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Lock size={18} color="var(--text-light)" />
+            <span style={{ fontWeight: '700', color: 'var(--text-dark)' }}>PIN del Dueño</span>
+          </div>
+          <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
+            Se pide para borrar movimientos de Caja Chica. De 4 a 6 números.
+            {String(config.ownerPin ?? '1234') === '1234' && <strong style={{ color: '#e74c3c' }}> Sigue siendo 1234: cámbialo.</strong>}
+          </p>
+          <input
+            style={inputStyle}
+            type="password"
+            inputMode="numeric"
+            autoComplete="new-password"
+            maxLength={6}
+            name="ownerPin"
+            value={form.ownerPin || ''}
+            onChange={e => { setForm(prev => ({ ...prev, ownerPin: e.target.value.replace(/\D/g, '') })); setSaved(false); }}
+            placeholder="Nuevo PIN"
           />
         </div>
 
