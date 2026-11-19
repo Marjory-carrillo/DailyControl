@@ -3,6 +3,7 @@ import { useOrders } from '../../context/OrdersContext';
 import { MapPin, CheckCircle2, Navigation, LogOut, RefreshCw } from 'lucide-react';
 import { useToast, useConfirm } from '../../context/ToastContext';
 import { playChime } from '../../utils/playChime';
+import { deliveredUpdate } from '../../utils/orderFlow';
 
 export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
@@ -46,7 +47,8 @@ export default function DeliveryView({ onLogout }) {
     const confirmed = await showConfirm('¿Confirmar entrega completada?');
     if (!confirmed) return;
     try {
-      await updateOrder(orderId, { status: 'entregado' });
+      const order = orders.find(o => o.id === orderId);
+      await updateOrder(orderId, deliveredUpdate(order || {}, new Date().toISOString()));
       addToast('Pedido entregado con éxito', 'success');
     } catch (err) {
       addToast('Error al confirmar', 'error');

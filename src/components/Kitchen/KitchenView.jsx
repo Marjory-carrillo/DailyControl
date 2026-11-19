@@ -1,20 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle, Bike, UtensilsCrossed, Clock } from 'lucide-react';
+import { CheckCircle, Bike, UtensilsCrossed, Clock } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
-import { useToast } from '../../context/ToastContext';
+import { useToast, useConfirm } from '../../context/ToastContext';
+import { kitchenReadyStatus, kitchenPrintsTicket } from '../../utils/orderFlow';
 import { printTicket } from '../../utils/printTicket';
 import { useApp } from '../../context/AppContext';
 import { playChime } from '../../utils/playChime';
 
-// Exportamos también el conteo para el badge del nav
-export function useKitchenCount() {
-  const { orders } = useOrders();
-  return orders.filter(o => o.status === 'en_preparacion').length;
-}
-
-export default function KitchenView({ onClose, modal = false }) {
+export default function KitchenView() {
   const { orders, updateOrder, bulkUpdateOrders } = useOrders();
   const { addToast } = useToast();
+  const showConfirm = useConfirm();
   const { config } = useApp();
   const [filter, setFilter] = useState('all'); // 'all' | 'mesa' | 'delivery'
 
@@ -50,33 +46,19 @@ export default function KitchenView({ onClose, modal = false }) {
       return;
     }
 
-    const confirmClean = window.confirm(`¿Estás seguro de que deseas marcar las ${ordersToClean.length} órdenes de la cocina como listas/completadas?`);
+    const confirmClean = await showConfirm(`¿Marcar las ${ordersToClean.length} órdenes de la cocina como listas?`);
     if (!confirmClean) return;
 
     try {
-      // Separar por tipo para registrar correctamente
-      const deliveryOrderIds = [];
-      const dineInOrders = [];
-
+      // Un update por estado destino (listo / paid / open), según si es domicilio, mesa y si ya se cobró.
+      const byStatus = {};
       ordersToClean.forEach(order => {
-        if (order.delivery) {
-          deliveryOrderIds.push(order.id);
-        } else {
-          dineInOrders.push(order);
-        }
+        const next = kitchenReadyStatus(order);
+        (byStatus[next] ||= []).push(order.id);
       });
-
-      // 1. Bulk update delivery orders to 'listo'
-      if (deliveryOrderIds.length > 0) {
-        await bulkUpdateOrders(deliveryOrderIds, { status: 'listo' });
+      for (const [status, ids] of Object.entries(byStatus)) {
+        await bulkUpdateOrders(ids, { status });
       }
-
-      // 2. Bulk update dine-in/mostrador orders to 'paid'
-      if (dineInOrders.length > 0) {
-        const dineInIds = dineInOrders.map(o => o.id);
-        await bulkUpdateOrders(dineInIds, { status: 'paid' });
-      }
-
       addToast(`Se marcaron ${ordersToClean.length} órdenes como listas ✓`, 'success');
     } catch (err) {
       console.error(err);
@@ -85,22 +67,17 @@ export default function KitchenView({ onClose, modal = false }) {
   };
 
   const handleReady = async (order) => {
-    // 1. Trigger the print dialog synchronously while we still have the user gesture!
-    try {
-      printTicket(order, config);
-    } catch (printErr) {
-      console.error('Failed to print ticket:', printErr);
-    }
+    // Solo domicilios por cobrar llevan ticket desde cocina; los demás lo recibieron (o recibirán) al cobrar.
+    if (kitchenPrintsTicket(order)) printTicket(order, config);
 
-    // 2. Perform the database update asynchronously.
+    const next = kitchenReadyStatus(order);
     try {
-      if (order.delivery) {
-        await updateOrder(order.id, { status: 'listo' });
-        addToast(`Orden lista para el repartidor 🛵`, 'success');
-      } else {
-        await updateOrder(order.id, { status: 'paid' });
-        addToast(`Orden cobrada y registrada ✓`, 'success');
-      }
+      await updateOrder(order.id, { status: next });
+      const msg = order.delivery ? 'Lista para el repartidor 🛵'
+        : next === 'paid' ? 'Orden terminada ✓'
+        : next === 'open' ? 'Lista para servir 🍽️'
+        : 'Lista — cobrar en Envíos / Llevar';
+      addToast(msg, 'success');
     } catch (err) {
       console.error(err);
       addToast('Error al actualizar orden', 'error');
@@ -130,7 +107,7 @@ export default function KitchenView({ onClose, modal = false }) {
       background: '#1a1a2e', color: 'white',
       padding: '14px 20px', display: 'flex',
       justifyContent: 'space-between', alignItems: 'center',
-      flexShrink: 0, borderRadius: modal ? '0' : '16px 16px 0 0',
+      flexShrink: 0, borderRadius: '16px 16px 0 0',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <UtensilsCrossed size={22} color="#FF9800" />
@@ -169,16 +146,6 @@ export default function KitchenView({ onClose, modal = false }) {
             🧹 Limpiar Cocina ({kitchenOrders.length})
           </button>
         )}
-
-        {modal && onClose && (
-          <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
-            cursor: 'pointer', borderRadius: '50%', width: '34px', height: '34px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <X size={18} />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -192,7 +159,7 @@ export default function KitchenView({ onClose, modal = false }) {
       gap: '14px', alignContent: 'start',
     }}>
       {kitchenOrders.length === 0 ? (
-        <div style={{ gridColumn: '1/-1', textAlign: 'center', paddingTop: '60px', color: modal ? 'white' : 'var(--text-light)' }}>
+        <div style={{ gridColumn: '1/-1', textAlign: 'center', paddingTop: '60px', color: 'var(--text-light)' }}>
           <UtensilsCrossed size={56} style={{ opacity: 0.25, marginBottom: '14px' }} />
           <h3 style={{ opacity: 0.5, margin: 0 }}>Sin órdenes en preparación</h3>
           <p style={{ opacity: 0.3, marginTop: '6px' }}>Las nuevas órdenes aparecerán aquí en tiempo real</p>
@@ -299,20 +266,6 @@ export default function KitchenView({ onClose, modal = false }) {
       )}
     </div>
   );
-
-  // ── Modo modal (overlay) ───────────────────────────────────────────────────
-  if (modal) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 2500,
-        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        {header}
-        {grid}
-      </div>
-    );
-  }
 
   // ── Modo página completa (tab del admin) ───────────────────────────────────
   return (
