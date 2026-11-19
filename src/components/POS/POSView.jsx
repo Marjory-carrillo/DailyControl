@@ -7,6 +7,7 @@ import { useOrders } from '../../context/OrdersContext';
 import { useTurno } from '../../context/TurnoContext';
 import { printTicket } from '../../utils/printTicket';
 import { printKitchenNote } from '../../utils/printKitchenNote';
+import { planPosAction, pendingKitchenItems, markItemsSent } from '../../utils/orderFlow';
 import { ShoppingCart, Search, X } from 'lucide-react';
 import TableMapModal from './TableMapModal';
 import ActiveDeliveriesModal from './ActiveDeliveriesModal';
@@ -14,7 +15,7 @@ import ActiveDeliveriesModal from './ActiveDeliveriesModal';
 export default function POSView({ employeeInfo, onOpenTab }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder, updateOrder, deleteOrder, orders } = useOrders();
+  const { addOrder, updateOrder } = useOrders();
   const { shift } = useTurno();
 
   // Guard: check if a shift is open before allowing any cart action
@@ -82,130 +83,62 @@ export default function POSView({ employeeInfo, onOpenTab }) {
 
   const handleCheckout = async (note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, tableNumber, actionType = 'checkout') => {
     if (cart.length === 0) return;
-    
+    if (!shift) {
+      addToast('No hay turno abierto.', 'error');
+      return;
+    }
+
+    const pending = pendingKitchenItems(cart);
+    if (actionType === 'prepare' && pending.length === 0) {
+      addToast('No hay productos nuevos para mandar a cocina.', 'error');
+      return;
+    }
+    const plan = planPosAction(actionType, {
+      isDelivery: !!deliveryInfo,
+      table: tableNumber || null,
+      currentStatus: loadedAccount?.status,
+      hasPending: pending.length > 0,
+    });
+    if (plan.error) {
+      addToast(plan.error, 'error');
+      return;
+    }
+
     try {
-      // Solo checkout y save requieren turno abierto — prepare (cocina) puede hacerlo cualquier empleado
-      if (!shift && actionType !== 'prepare') {
-        addToast('No hay turno abierto. Solo puedes mandar a preparar.', 'error');
-        return;
-      }
-      
-      const method = paymentMethod || 'Efectivo';
       const now = new Date();
       const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      
-      // Numeración consecutiva diaria — empieza en #10 cada día
-      let orderId = openAccountId;
-      let orderNumber = openAccountId;
-      if (!orderId) {
-        const todayOrders = orders.filter(o => {
-          let oDate = o.date;
-          if (o.timestamp) {
-            const d = new Date(Number(o.timestamp));
-            oDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          }
-          return oDate === isoDate;
-        });
-        const maxNum = todayOrders.reduce((max, o) => {
-          const num = parseInt(o.order_number || o.id, 10);
-          return !isNaN(num) && num < 10000 ? Math.max(max, num) : max;
-        }, 9);
-        orderId = undefined; // Let Supabase generate UUID
-        orderNumber = String(maxNum + 1);
-      }
-      
+
+      // order_number lo asigna la base al insertar (diario, desde #10) y no cambia al actualizar.
       const orderData = {
-        id: orderId,
-        order_number: orderNumber || orderId,
-        items: [...cart],
+        items: plan.printKitchen ? markItemsSent(cart) : cart,
         subtotal: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         discount: discountAmount || 0,
         total: total,
         note: note || '',
-        paymentMethod: method,
+        paymentMethod: paymentMethod || 'Efectivo',
         delivery: deliveryInfo || null,
         mesero: meseroName || null,
         table: tableNumber || null,
         time: now.toLocaleTimeString(),
         date: isoDate,
         timestamp: Date.now(),
-        status: actionType === 'save' ? 'open' : 'paid',
+        status: plan.status,
+        ...(plan.markPaid ? { paidAt: loadedAccount?.paidAt ?? now.toISOString() } : {}),
       };
 
-      let finalOrder;
-      if (actionType === 'save' || (actionType === 'prepare' && tableNumber && !deliveryInfo)) {
-        // Mesa abierta - se guarda/actualiza en Supabase con status 'open'
-        const openOrderData = { ...orderData, status: 'open' };
-        let res;
-        if (openAccountId) {
-          res = await updateOrder(openAccountId, openOrderData);
-          finalOrder = (res && res[0]) ? res[0] : openOrderData;
-          addToast(`Mesa ${tableNumber || openAccountId} actualizada en la nube ✓`, 'success');
-        } else {
-          res = await addOrder(openOrderData);
-          finalOrder = (res && res[0]) ? res[0] : openOrderData;
-          addToast(`Mesa ${tableNumber} guardada en la nube ✓`, 'success');
-        }
+      const res = openAccountId ? await updateOrder(openAccountId, orderData) : await addOrder(orderData);
+      const finalOrder = res?.[0] ?? orderData;
 
-        if (actionType === 'prepare') {
-          try {
-            printKitchenNote(finalOrder);
-          } catch (printErr) {
-            console.error('Failed to print kitchen note:', printErr);
-          }
-        } else {
-          // Imprimir ticket de mesa guardada
-          try {
-            printKitchenNote(finalOrder);
-          } catch (printErr) {
-            console.error('Failed to print kitchen note:', printErr);
-          }
-        }
-      } else if (actionType === 'prepare') {
-        // Llevar o Domicilio - va a la cola de cocina con status 'en_preparacion'
-        const prepOrder = { ...orderData, status: 'en_preparacion' };
-        let res;
-        if (openAccountId) {
-          res = await updateOrder(openAccountId, prepOrder);
-        } else {
-          res = await addOrder(prepOrder);
-        }
-        finalOrder = (res && res[0]) ? res[0] : prepOrder;
+      // La cola de impresión garantiza comanda y luego ticket, sin pisarse.
+      if (plan.printKitchen) printKitchenNote({ ...finalOrder, items: pending });
+      if (plan.printTicket) printTicket(finalOrder, config);
 
-        try {
-          printKitchenNote(finalOrder);
-        } catch (printErr) {
-          console.error('Failed to print kitchen note:', printErr);
-        }
-
-        if (deliveryInfo) {
-          try {
-            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
-          } catch (printErr) {
-            console.error('Failed to print ticket:', printErr);
-          }
-        }
-        addToast(`Comanda enviada a cocina 🍳`, 'success');
-      } else if (actionType === 'checkout') {
-        // Cobrar - va con status 'paid'
-        const paidOrder = { ...orderData, status: 'paid' };
-        let res;
-        if (openAccountId) {
-          res = await updateOrder(openAccountId, paidOrder);
-        } else {
-          res = await addOrder(paidOrder);
-        }
-        finalOrder = (res && res[0]) ? res[0] : paidOrder;
-
-        if (finalOrder.delivery) {
-          try {
-            printTicket({ ...finalOrder, id: finalOrder.order_number || finalOrder.id }, config);
-          } catch (printErr) {
-            console.error('Failed to print ticket:', printErr);
-          }
-        }
-        addToast(`Orden cobrada ✓`, 'success');
-      }
+      addToast(
+        actionType === 'save' ? 'Cuenta guardada ✓'
+          : actionType === 'prepare' ? 'Comanda enviada a cocina 🍳'
+          : 'Orden cobrada ✓',
+        'success'
+      );
 
       setCart([]);
       setOpenAccountId(null);
@@ -224,7 +157,7 @@ export default function POSView({ employeeInfo, onOpenTab }) {
     setLoadedAccount(acc);
     setShowTableMap(false);
     setMobileView('cart');
-    addToast(`Cuenta #${acc.id} cargada.`, 'success');
+    addToast(`Cuenta ${acc.table || '#' + acc.order_number} cargada.`, 'success');
   };
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);

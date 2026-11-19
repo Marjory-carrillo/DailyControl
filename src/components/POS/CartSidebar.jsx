@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, Plus, Minus, Printer, Tag, Bike, MapPin, Phone, UserCircle2, X, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
+import { clampDiscount } from '../../utils/orderFlow';
 
 export default function CartSidebar({ cart, updateQuantity, removeFromCart, updateItemNote, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
   const { config } = useApp();
@@ -46,11 +48,6 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   const [deliveryClientName, setDeliveryClientName] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(config?.defaultDeliveryFee || 0);
 
-  // Track occupied tables dynamically from orders context
-  const occupiedTables = React.useMemo(() => {
-    return orders.filter(o => o.status === 'open').map(o => o.table).filter(Boolean);
-  }, [orders]);
-
   React.useEffect(() => {
     if (loadedAccount) {
       setNote(loadedAccount.note || '');
@@ -89,7 +86,28 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
     }
   }, [cart.length, loadedAccount]);
 
+  // Con descuento, la acción espera el PIN del dueño.
+  const [pinFor, setPinFor] = useState(null);
+  const [pinValue, setPinValue] = useState('');
+
   const handleAction = (type) => {
+    if (discountAmount > 0) {
+      setPinFor(type);
+      setPinValue('');
+      return;
+    }
+    executeAction(type, null);
+  };
+
+  const confirmPin = () => {
+    if (pinValue !== String(config?.ownerPin ?? '1234')) {
+      addToast('PIN incorrecto', 'error');
+      setPinValue('');
+      return;
+    }
+    const type = pinFor;
+    setPinFor(null);
+    setPinValue('');
     executeAction(type, null);
   };
 
@@ -107,7 +125,7 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
   };
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discountAmount = parseFloat(discount) || 0;
+  const discountAmount = clampDiscount(discount, subtotal);
   const total = Math.max(0, subtotal - discountAmount + (isDelivery ? parseFloat(deliveryFee) || 0 : 0));
 
   // Get unique sub-order numbers from cart and current active persona
@@ -154,6 +172,25 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
 
   return (
     <div className="glass-panel" style={{ width: fullHeight ? '100%' : '360px', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* PIN del dueño para autorizar descuento */}
+      {pinFor && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="glass-panel" style={{ background: '#fff', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <strong>Descuento de ${discountAmount.toFixed(2)}</strong>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Pide al dueño su PIN para autorizarlo.</span>
+            <input autoFocus type="password" inputMode="numeric" maxLength={6} value={pinValue}
+              onChange={e => setPinValue(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={e => { if (e.key === 'Enter') confirmPin(); }}
+              placeholder="PIN" style={inputStyle} />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setPinFor(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.15)', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button className="btn-primary" onClick={confirmPin} style={{ flex: 1, padding: '10px' }}>Autorizar</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Header */}
       <div style={{ padding: fullHeight ? '14px 16px' : '20px', borderBottom: 'var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <h2 style={{ margin: 0, fontSize: fullHeight ? '1.15rem' : '1.5rem' }}>
@@ -369,8 +406,10 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
           {!isDelivery ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '12px', fontSize: '0.9rem' }}
-                  onClick={() => handleAction('save')}>Guardar</button>
+                {tableNumber && (
+                  <button className="btn-primary" style={{ flex: 1, background: 'var(--warning-color)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '12px', fontSize: '0.9rem' }}
+                    onClick={() => handleAction('save')}>Guardar</button>
+                )}
                 <button className="btn-primary" style={{ flex: 1, background: '#FF9800', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', padding: '12px', fontSize: '0.9rem' }}
                   onClick={() => handleAction('prepare')}>
                   🍳 Preparar
