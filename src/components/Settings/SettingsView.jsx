@@ -4,24 +4,13 @@ import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Al
 import DeliveryEmployees from './DeliveryEmployees';
 import { useToast } from '../../context/ToastContext';
 
-const ALL_TABS = [
-  { id: 'pos',       label: 'Ventas (POS)' },
-  { id: 'turno',     label: 'Turno / Corte de Caja' },
-  { id: 'caja',      label: 'Caja Chica' },
-  { id: 'costeo',    label: 'Costeo por Taco' },
-  { id: 'dashboard', label: 'Ventas / Dashboard' },
-  { id: 'menu',      label: 'Editor de Menú' },
-];
-
 export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
   const { config, setConfig } = useApp();
   const showToast = useToast();
   const [form, setForm] = useState({
     ...config,
-    protectedTabs: config.protectedTabs ?? ['dashboard', 'menu', 'settings', 'caja', 'turno'],
     appBackgroundColor: config.appBackgroundColor ?? '#f5f5f7',
     tables: config.tables || [],
-    pinProtectionEnabled: config.pinProtectionEnabled ?? true
   });
   const [saved, setSaved] = useState(false);
   const fileRef = useRef();
@@ -46,27 +35,13 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
     reader.readAsDataURL(file);
   };
 
-  const toggleProtected = (tabId) => {
-    setForm(prev => {
-      const current = prev.protectedTabs || [];
-      const updated = current.includes(tabId)
-        ? current.filter(t => t !== tabId)
-        : [...current, tabId];
-      return { ...prev, protectedTabs: updated };
-    });
-    setSaved(false);
-  };
-
   const handleSave = () => {
     if (!/^\d{4,6}$/.test(String(form.ownerPin ?? ''))) {
       showToast('El PIN debe tener de 4 a 6 números.', 'error');
       return;
     }
-    // Settings tab is always protected — enforce it
-    const finalForm = { 
-      ...form, 
-      protectedTabs: [...new Set([...(form.protectedTabs || []), 'settings'])] 
-    };
+    // protectedTabs/pinProtectionEnabled eran de una protección que nunca se aplicó: no se guardan.
+    const { protectedTabs: _p, pinProtectionEnabled: _e, ...finalForm } = form;
     setConfig(finalForm);
     setSaved(true);
   };
