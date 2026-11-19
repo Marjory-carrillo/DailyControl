@@ -6,6 +6,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { OrdersProvider, useOrders } from './context/OrdersContext';
 import { CosteoProvider } from './context/CosteoContext';
+import { TurnoProvider } from './context/TurnoContext';
 import { supabase } from './lib/supabaseClient';
 
 import POSView from './components/POS/POSView';
@@ -174,8 +175,9 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
+    <AppProvider restaurantId={session.restaurant_id}>
       <OrdersProvider restaurantId={session.restaurant_id}>
+       <TurnoProvider restaurantId={session.restaurant_id}>
         <CosteoProvider restaurantId={session.restaurant_id}>
           <ToastProvider>
             {session.role === 'admin' ? (
@@ -187,6 +189,7 @@ export default function App() {
             )}
           </ToastProvider>
         </CosteoProvider>
+       </TurnoProvider>
       </OrdersProvider>
     </AppProvider>
   );

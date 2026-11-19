@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, DollarSign, ShoppingBag, CreditCard, Phone, Printer, Clock, ClipboardList, Info, Bike, Calendar, Filter, Download, FileText, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useOrders } from '../../context/OrdersContext';
+import { useTurno } from '../../context/TurnoContext';
 import { printTicket } from '../../utils/printTicket';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -290,23 +291,13 @@ export default function DashboardView() {
   const [filterMethod, setFilterMethod] = useState('Todos');
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   const [expandedOrder, setExpandedOrder] = useState(null); // order index to expand
-  const [cajaMovements, setCajaMovements] = useState([]);
+  const { movements: cajaMovements } = useTurno();
   const [showRangePicker, setShowRangePicker] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 900);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // ── load caja chica from localStorage, poll every 5s
-  useEffect(() => {
-    const load = () => {
-      setCajaMovements(JSON.parse(localStorage.getItem('cajaChica') || '[]'));
-    };
-    load();
-    const iv = setInterval(load, 5000);
-    return () => clearInterval(iv);
   }, []);
 
   // ── unique meseros list for filter

@@ -4,6 +4,7 @@ import CartSidebar from './CartSidebar';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
+import { useTurno } from '../../context/TurnoContext';
 import { printTicket } from '../../utils/printTicket';
 import { printKitchenNote } from '../../utils/printKitchenNote';
 import { ShoppingCart, Search, X } from 'lucide-react';
@@ -13,12 +14,12 @@ import ActiveDeliveriesModal from './ActiveDeliveriesModal';
 export default function POSView({ employeeInfo, onOpenTab }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder, updateOrder, deleteOrder, orders, registerOrderInShift } = useOrders();
+  const { addOrder, updateOrder, deleteOrder, orders } = useOrders();
+  const { shift } = useTurno();
 
   // Guard: check if a shift is open before allowing any cart action
   const requireShift = () => {
-    const hasShift = !!localStorage.getItem('currentShift');
-    if (!hasShift) {
+    if (!shift) {
       addToast('⚠️ No hay turno abierto. Abriendo Turno...', 'error');
       if (onOpenTab) onOpenTab('turno');
       return false;
@@ -83,9 +84,8 @@ export default function POSView({ employeeInfo, onOpenTab }) {
     if (cart.length === 0) return;
     
     try {
-      const currentShiftStr = localStorage.getItem('currentShift');
       // Solo checkout y save requieren turno abierto — prepare (cocina) puede hacerlo cualquier empleado
-      if (!currentShiftStr && actionType !== 'prepare') {
+      if (!shift && actionType !== 'prepare') {
         addToast('No hay turno abierto. Solo puedes mandar a preparar.', 'error');
         return;
       }
@@ -196,10 +196,6 @@ export default function POSView({ employeeInfo, onOpenTab }) {
           res = await addOrder(paidOrder);
         }
         finalOrder = (res && res[0]) ? res[0] : paidOrder;
-
-        if (currentShiftStr) {
-          registerOrderInShift(finalOrder);
-        }
 
         if (finalOrder.delivery) {
           try {

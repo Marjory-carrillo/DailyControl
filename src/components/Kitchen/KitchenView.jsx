@@ -13,7 +13,7 @@ export function useKitchenCount() {
 }
 
 export default function KitchenView({ onClose, modal = false }) {
-  const { orders, updateOrder, registerOrderInShift, bulkUpdateOrders } = useOrders();
+  const { orders, updateOrder, bulkUpdateOrders } = useOrders();
   const { addToast } = useToast();
   const { config } = useApp();
   const [filter, setFilter] = useState('all'); // 'all' | 'mesa' | 'delivery'
@@ -75,15 +75,6 @@ export default function KitchenView({ onClose, modal = false }) {
       if (dineInOrders.length > 0) {
         const dineInIds = dineInOrders.map(o => o.id);
         await bulkUpdateOrders(dineInIds, { status: 'paid' });
-        
-        // Registrar en turno activo cada una
-        dineInOrders.forEach(order => {
-          try {
-            registerOrderInShift({ ...order, status: 'paid' });
-          } catch (shiftErr) {
-            console.error("Error registering bulk order in shift:", shiftErr);
-          }
-        });
       }
 
       addToast(`Se marcaron ${ordersToClean.length} órdenes como listas ✓`, 'success');
@@ -108,10 +99,6 @@ export default function KitchenView({ onClose, modal = false }) {
         addToast(`Orden lista para el repartidor 🛵`, 'success');
       } else {
         await updateOrder(order.id, { status: 'paid' });
-
-        // Registrar en turno activo
-        registerOrderInShift({ ...order, status: 'paid' });
-        
         addToast(`Orden cobrada y registrada ✓`, 'success');
       }
     } catch (err) {

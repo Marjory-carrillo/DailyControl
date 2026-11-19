@@ -1,116 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PlayCircle, StopCircle, Calculator, FileText } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast, useConfirm } from '../../context/ToastContext';
-import { useOrders } from '../../context/OrdersContext';
+import { useTurno } from '../../context/TurnoContext';
 
 export default function TurnoView() {
   const { config } = useApp();
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { orders } = useOrders();
-  
-  // Current shift State
-  const [shift, setShift] = useState(null);
-  
+  const { shift, history, shiftStats: currentShiftStats, openShift, closeShift } = useTurno();
+
   // Open Shift Form
   const [cajero, setCajero] = useState('');
   const [fondoInicial, setFondoInicial] = useState(config?.defaultFondo || '');
-  
+  const [busy, setBusy] = useState(false);
+
   // Close Shift Form
   const [efectivoReal, setEfectivoReal] = useState('');
-  
-  // History State
-  const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    const loadData = () => {
-      const current = localStorage.getItem('currentShift');
-      if (current) setShift(JSON.parse(current));
-      else setShift(null);
-      
-      const hist = localStorage.getItem('shiftHistory');
-      if (hist) setHistory(JSON.parse(hist));
-    };
-
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => window.removeEventListener('storage', loadData);
-  }, []);
-
-  const currentShiftStats = React.useMemo(() => {
-    if (!shift) return { count: 0, efectivo: 0, transferencia: 0, envios: 0, enviosEfectivo: 0 };
-    const openTime = new Date(shift.openedAt).getTime();
-    const shiftOrders = orders.filter(o => 
-      o.timestamp >= openTime && 
-      (o.status === 'paid' || o.status === 'entregado')
-    );
-
-    let count = shiftOrders.length;
-    let efectivo = 0;
-    let transferencia = 0;
-    let envios = 0;
-    let enviosEfectivo = 0;
-
-    shiftOrders.forEach(o => {
-      const deliveryFee = parseFloat(o.delivery?.deliveryFee || 0);
-      const totalVal = parseFloat(o.total || 0);
-      const foodTotal = totalVal - deliveryFee;
-      const method = (o.paymentMethod || 'Efectivo').toLowerCase();
-
-      envios += deliveryFee;
-      if (method === 'efectivo') {
-        efectivo += foodTotal;
-        enviosEfectivo += deliveryFee;
-      } else if (method === 'transferencia') {
-        transferencia += foodTotal;
-      }
-    });
-
-    return { count, efectivo, transferencia, envios, enviosEfectivo };
-  }, [orders, shift]);
-
-  const handleOpenShift = (e) => {
+  const handleOpenShift = async (e) => {
     e.preventDefault();
-    if (!cajero.trim() || !fondoInicial) return;
-    
-    const newShift = {
-      id: Date.now().toString(),
-      openedAt: new Date().toISOString(),
-      cajero,
-      fondoInicial: parseFloat(fondoInicial),
-      orders: 0,
-      ventasEfectivo: 0,
-      ventasTransferencia: 0,
-      ventasEnvios: 0,
-      enviosEfectivo: 0,
-      enviosTransferencia: 0,
-    };
-    
-    localStorage.setItem('currentShift', JSON.stringify(newShift));
-    setShift(newShift);
-
-    const now = new Date();
-    const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    // Auto-register fondo inicial in Caja Chica
-    const fondoMovement = {
-      id: `fondo-${newShift.id}`,
-      shiftId: newShift.id,
-      shiftLabel: cajero,
-      type: 'ingreso',
-      amount: parseFloat(fondoInicial),
-      description: `Fondo Inicial — Turno de ${cajero}`,
-      date: isoDate,
-      time: now.toLocaleTimeString(),
-      timestamp: Date.now(),
-    };
-    const existingCaja = JSON.parse(localStorage.getItem('cajaChica') || '[]');
-    localStorage.setItem('cajaChica', JSON.stringify([fondoMovement, ...existingCaja]));
-
-    showToast(`Turno abierto por ${cajero} — Fondo $${parseFloat(fondoInicial).toFixed(2)} registrado en Caja Chica`, 'success');
-    setCajero('');
-    setFondoInicial('');
+    if (!cajero.trim() || !fondoInicial || busy) return;
+    setBusy(true);
+    try {
+      await openShift(cajero.trim(), parseFloat(fondoInicial));
+      showToast(`Turno abierto por ${cajero} — Fondo $${parseFloat(fondoInicial).toFixed(2)} registrado en Caja Chica`, 'success');
+      setCajero('');
+      setFondoInicial('');
+    } catch (err) {
+      showToast(err.message || 'No se pudo abrir el turno.', 'error');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleCloseShift = async () => {
@@ -121,37 +42,14 @@ export default function TurnoView() {
 
     const confirmed = await showConfirm('¿Estás seguro de cerrar el turno actual? Se guardará un resumen del corte de caja.');
     if (!confirmed) return;
-    
-    const realCash = parseFloat(efectivoReal) || 0;
-    const totalVentas = currentShiftStats.efectivo + currentShiftStats.transferencia;
-    const totalEnvios = currentShiftStats.envios;
-    const efectivoEsperado = shift.fondoInicial + currentShiftStats.efectivo + currentShiftStats.enviosEfectivo;
-    const diferencia = realCash - efectivoEsperado;
 
-    const closedShift = {
-      ...shift,
-      orders: currentShiftStats.count,
-      ventasEfectivo: currentShiftStats.efectivo,
-      ventasTransferencia: currentShiftStats.transferencia,
-      ventasEnvios: currentShiftStats.envios,
-      enviosEfectivo: currentShiftStats.enviosEfectivo,
-      closedAt: new Date().toISOString(),
-      totalVentas,
-      totalEnvios,
-      efectivoEsperado,
-      efectivoReal: realCash,
-      diferencia,
-    };
-    
-    const newHistory = [closedShift, ...history];
-    localStorage.setItem('shiftHistory', JSON.stringify(newHistory));
-    setHistory(newHistory);
-    
-    // Clear current shift
-    localStorage.removeItem('currentShift');
-    setShift(null);
-    setEfectivoReal('');
-    showToast('Turno cerrado. Resumen guardado en el historial.', 'success');
+    try {
+      await closeShift(parseFloat(efectivoReal) || 0);
+      setEfectivoReal('');
+      showToast('Turno cerrado. Resumen guardado en el historial.', 'success');
+    } catch (err) {
+      showToast(err.message || 'No se pudo cerrar el turno.', 'error');
+    }
   };
 
   const formatMoney = (amount) => `$${parseFloat(amount || 0).toFixed(2)}`;

@@ -1,34 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Trash2, History, Lock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useApp } from '../../context/AppContext';
+import { useTurno } from '../../context/TurnoContext';
 
 export default function CajaChicaView() {
   const { addToast } = useToast();
   const { config } = useApp();
+  const { shift: currentShift, shiftStats, movements, addMovement, deleteMovement } = useTurno();
 
-  const [movements, setMovements] = useState([]);
   const [form, setForm] = useState({ type: 'ingreso', amount: '', description: '' });
   const [showAll, setShowAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deletePin, setDeletePin] = useState('');
 
-  const currentShift = (() => {
-    try { return JSON.parse(localStorage.getItem('currentShift') || 'null'); } catch { return null; }
-  })();
   const shiftId = currentShift?.id || null;
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('cajaChica') || '[]');
-    setMovements(stored);
-  }, []);
-
-  const saveMovements = (updated) => {
-    setMovements(updated);
-    localStorage.setItem('cajaChica', JSON.stringify(updated));
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.amount || parseFloat(form.amount) <= 0) {
       addToast('Ingresa un monto válido.', 'error');
       return;
@@ -40,35 +28,30 @@ export default function CajaChicaView() {
     if (!currentShift) {
       addToast('Sin turno activo — el movimiento se registrará sin turno.', 'warning');
     }
-    const now = new Date();
-    const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const newMovement = {
-      id: Date.now().toString(),
-      shiftId,
-      shiftLabel: currentShift ? (currentShift.cashierName || `Turno ${shiftId}`) : 'Sin turno',
-      type: form.type,
-      amount: parseFloat(form.amount),
-      description: form.description.trim(),
-      date: isoDate,
-      time: now.toLocaleTimeString(),
-      timestamp: Date.now(),
-    };
-    saveMovements([newMovement, ...movements]);
-    setForm({ type: 'ingreso', amount: '', description: '' });
-    addToast('Movimiento registrado ✓', 'success');
+    try {
+      await addMovement({ type: form.type, amount: parseFloat(form.amount), description: form.description.trim() });
+      setForm({ type: 'ingreso', amount: '', description: '' });
+      addToast('Movimiento registrado ✓', 'success');
+    } catch (err) {
+      addToast('Error: ' + err.message, 'error');
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     const ownerPin = String(config?.ownerPin || '1234').trim();
     if (deletePin !== ownerPin) {
       addToast('PIN incorrecto', 'error');
       setDeletePin('');
       return;
     }
-    saveMovements(movements.filter(m => m.id !== deletingId));
+    try {
+      await deleteMovement(deletingId);
+      addToast('Movimiento eliminado', 'success');
+    } catch (err) {
+      addToast('Error: ' + err.message, 'error');
+    }
     setDeletingId(null);
     setDeletePin('');
-    addToast('Movimiento eliminado', 'success');
   };
 
   // Filter: show only current shift unless showAll is toggled
@@ -79,7 +62,7 @@ export default function CajaChicaView() {
 
   // Summary stats for the displayed set
   const stats = useMemo(() => {
-    const ventasEfectivo = !showAll && currentShift ? (currentShift.ventasEfectivo || 0) : 0;
+    const ventasEfectivo = !showAll && currentShift ? shiftStats.efectivo : 0;
     const ingresos = displayedMovements
       .filter(m => m.type !== 'egreso')
       .reduce((a, m) => a + m.amount, 0);
@@ -87,7 +70,7 @@ export default function CajaChicaView() {
       .filter(m => m.type === 'egreso')
       .reduce((a, m) => a + m.amount, 0);
     return { ingresos, egresos, ventasEfectivo, saldo: ingresos + ventasEfectivo - egresos };
-  }, [displayedMovements, showAll, currentShift]);
+  }, [displayedMovements, showAll, currentShift, shiftStats]);
 
   // Group movements by date (newest day first)
   const groupedByDate = useMemo(() => {
@@ -156,7 +139,7 @@ export default function CajaChicaView() {
           fontSize: '0.88rem', fontWeight: '600',
           color: currentShift ? '#10ac84' : '#e67e22',
         }}>
-          {currentShift ? `✓ Turno activo: ${currentShift.cashierName || shiftId}` : '⚠️ Sin turno activo'}
+          {currentShift ? `✓ Turno activo: ${currentShift.cajero}` : '⚠️ Sin turno activo'}
         </div>
 
         {/* Stats */}

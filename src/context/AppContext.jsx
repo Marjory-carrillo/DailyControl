@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { menuItems as defaultMenuItems, categories as defaultCategories } from '../data/mockData';
+import { supabase } from '../lib/supabaseClient';
 
 const AppContext = createContext();
 
@@ -15,109 +15,78 @@ const DEFAULT_CONFIG = {
   transferAccount: '',       // Número de cuenta / CLABE para transferencias
   protectedTabs: ['dashboard', 'menu', 'settings', 'caja', 'turno', 'costeo'], // Módulos protegidos
 };
+const DEFAULT_CATEGORIES = [{ id: 'productos', name: 'Productos' }];
 
-const DATA_VERSION = '2'; // Increment to reset stored data
+// Configuración y menú del negocio, guardados en restaurant_settings (una fila por restaurante).
+export function AppProvider({ children, restaurantId }) {
+  const [config, setConfigState] = useState(DEFAULT_CONFIG);
+  const [categories, setCategoriesState] = useState(DEFAULT_CATEGORIES);
+  const [products, setProductsState] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
-export function AppProvider({ children }) {
-  // One-time migration: clear old mock data if version changed
+  const applyRow = (row) => {
+    if (!row) return;
+    setConfigState({ ...DEFAULT_CONFIG, ...row.config });
+    setCategoriesState(row.categories?.length ? row.categories : DEFAULT_CATEGORIES);
+    setProductsState(row.products || []);
+  };
+
   useEffect(() => {
-    const storedVersion = localStorage.getItem('dataVersion');
-    if (storedVersion !== DATA_VERSION) {
-      localStorage.removeItem('menuCategories');
-      localStorage.removeItem('menuProducts');
-      localStorage.setItem('dataVersion', DATA_VERSION);
-    }
-  }, []);
+    if (!restaurantId) return;
+    supabase.from('restaurant_settings').select('*').eq('restaurant_id', restaurantId).maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error('Error cargando configuración:', error);
+        applyRow(data);
+        setLoaded(true);
+      });
 
-  // Business config
-  const [config, setConfig] = useState(() => {
-    const saved = localStorage.getItem('businessConfig');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
-  });
+    // Cambios hechos en otro dispositivo (ej. el dueño edita el menú) llegan solos.
+    const channel = supabase
+      .channel(`settings:${restaurantId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'restaurant_settings', filter: `restaurant_id=eq.${restaurantId}` },
+        (payload) => applyRow(payload.new))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [restaurantId]);
 
-  // Menu categories
-  const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem('menuCategories');
-    return saved ? JSON.parse(saved) : defaultCategories;
-  });
+  // Solo el dueño puede guardar (RLS); para empleados esto falla y se registra en consola.
+  const save = async (patch) => {
+    const { error } = await supabase.from('restaurant_settings')
+      .upsert({ restaurant_id: restaurantId, ...patch, updated_at: new Date().toISOString() });
+    if (error) console.error('Error guardando configuración:', error);
+  };
 
-  // Menu products
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('menuProducts');
-    return saved ? JSON.parse(saved) : defaultMenuItems;
-  });
-
-  // Meseros (Waiters)
-  const [meseros, setMeseros] = useState(() => {
-    const saved = localStorage.getItem('businessMeseros');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Persist config
-  useEffect(() => {
-    localStorage.setItem('businessConfig', JSON.stringify(config));
-  }, [config]);
-
-  // Persist categories
-  useEffect(() => {
-    localStorage.setItem('menuCategories', JSON.stringify(categories));
-  }, [categories]);
-
-  // Persist products
-  useEffect(() => {
-    localStorage.setItem('menuProducts', JSON.stringify(products));
-  }, [products]);
-
-  // Persist meseros
-  useEffect(() => {
-    localStorage.setItem('businessMeseros', JSON.stringify(meseros));
-  }, [meseros]);
+  const setConfig = (next) => { setConfigState(next); save({ config: next }); };
+  const setCategories = (next) => { setCategoriesState(next); save({ categories: next }); };
+  const setProducts = (next) => { setProductsState(next); save({ products: next }); };
 
   // --- Category actions ---
-  const addCategory = (cat) => {
-    const newCat = { id: Date.now().toString(), name: cat.name };
-    setCategories(prev => [...prev, newCat]);
-  };
-
-  const updateCategory = (id, data) => {
-    setCategories(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
-  };
-
+  const addCategory = (cat) => setCategories([...categories, { id: Date.now().toString(), name: cat.name }]);
+  const updateCategory = (id, data) => setCategories(categories.map(c => c.id === id ? { ...c, ...data } : c));
   const deleteCategory = (id) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
-    setProducts(prev => prev.filter(p => p.category !== id));
+    const nextCategories = categories.filter(c => c.id !== id);
+    const nextProducts = products.filter(p => p.category !== id);
+    setCategoriesState(nextCategories);
+    setProductsState(nextProducts);
+    save({ categories: nextCategories, products: nextProducts });
   };
 
   // --- Product actions ---
-  const addProduct = (product) => {
-    const newProduct = { ...product, id: Date.now() };
-    setProducts(prev => [...prev, newProduct]);
-  };
+  const addProduct = (product) => setProducts([...products, { ...product, id: Date.now() }]);
+  const updateProduct = (id, data) => setProducts(products.map(p => p.id === id ? { ...p, ...data } : p));
+  const deleteProduct = (id) => setProducts(products.filter(p => p.id !== id));
 
-  const updateProduct = (id, data) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
-  };
-
-  const deleteProduct = (id) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-  };
-
-  // --- Mesero actions ---
-  const addMesero = (mesero) => {
-    const newMesero = { ...mesero, id: Date.now().toString() };
-    setMeseros(prev => [...prev, newMesero]);
-  };
-
-  const deleteMesero = (id) => {
-    setMeseros(prev => prev.filter(m => m.id !== id));
-  };
+  // Sin esto, pantallas como Configuración arrancarían con valores por defecto y los guardarían encima.
+  if (!loaded) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-light)' }}>Cargando…</div>;
+  }
 
   return (
     <AppContext.Provider value={{
       config, setConfig,
       categories, addCategory, updateCategory, deleteCategory,
       products, addProduct, updateProduct, deleteProduct,
-      meseros, setMeseros, addMesero, deleteMesero,
     }}>
       {children}
     </AppContext.Provider>

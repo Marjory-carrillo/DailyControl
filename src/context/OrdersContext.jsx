@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { printKitchenNote } from '../utils/printKitchenNote';
 
@@ -7,20 +7,14 @@ const OrdersContext = createContext();
 export function OrdersProvider({ children, restaurantId }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const ordersRef = useRef(orders);
-
-  useEffect(() => {
-    ordersRef.current = orders;
-  }, [orders]);
-
   useEffect(() => {
     if (!restaurantId) return;
     fetchOrders();
 
     // Supabase Realtime Subscription
     const channel = supabase
-      .channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+      .channel(`orders:${restaurantId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${restaurantId}` }, (payload) => {
         const row = payload.eventType === 'DELETE' ? payload.old : payload.new;
         if (row && row.restaurant_id === restaurantId) {
           handleRealtimeEvent(payload);
@@ -49,38 +43,6 @@ export function OrdersProvider({ children, restaurantId }) {
     setLoading(false);
   };
 
-  const registerOrderInShift = (order) => {
-    const currentShiftStr = localStorage.getItem('currentShift');
-    if (currentShiftStr) {
-      const shift = JSON.parse(currentShiftStr);
-      shift.processedOrders = shift.processedOrders || [];
-      if (!shift.processedOrders.includes(order.id)) {
-        shift.processedOrders.push(order.id);
-        
-        const deliveryFee = parseFloat(order.delivery?.deliveryFee || 0);
-        const foodTotal = (parseFloat(order.total) || 0) - deliveryFee;
-        const method = order.paymentMethod || 'Efectivo';
-        
-        shift.orders = (shift.orders || 0) + 1;
-        
-        if (method === 'Efectivo') {
-          shift.ventasEfectivo = (shift.ventasEfectivo || 0) + foodTotal;
-          shift.enviosEfectivo = (shift.enviosEfectivo || 0) + deliveryFee;
-        } else if (method === 'Transferencia') {
-          shift.ventasTransferencia = (shift.ventasTransferencia || 0) + foodTotal;
-          shift.enviosTransferencia = (shift.enviosTransferencia || 0) + deliveryFee;
-        } else if (method === 'Tarjeta') {
-          shift.ventasTarjeta = (shift.ventasTarjeta || 0) + foodTotal;
-          shift.enviosTarjeta = (shift.enviosTarjeta || 0) + deliveryFee;
-        }
-        
-        shift.ventasEnvios = (shift.ventasEnvios || 0) + deliveryFee;
-        localStorage.setItem('currentShift', JSON.stringify(shift));
-        window.dispatchEvent(new Event('storage'));
-      }
-    }
-  };
-
   const handleRealtimeEvent = (payload) => {
     if (payload.eventType === 'INSERT') {
       setOrders(prev => [payload.new, ...prev]);
@@ -96,29 +58,12 @@ export function OrdersProvider({ children, restaurantId }) {
           }
         }
       }
-      
-      // Also register if it's inserted directly as paid or entregado
-      if (payload.new.status === 'paid' || payload.new.status === 'entregado') {
-        registerOrderInShift(payload.new);
-      }
     } else if (payload.eventType === 'UPDATE') {
-      const oldOrder = ordersRef.current.find(o => o.id === payload.new.id);
       setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
-      
-      const wasPaidOrDelivered = oldOrder && (oldOrder.status === 'paid' || oldOrder.status === 'entregado');
-      const isPaidOrDelivered = payload.new.status === 'paid' || payload.new.status === 'entregado';
-      
-      if (isPaidOrDelivered && !wasPaidOrDelivered) {
-        registerOrderInShift(payload.new);
-      }
     } else if (payload.eventType === 'DELETE') {
       setOrders(prev => prev.filter(o => o.id !== payload.old.id));
     }
   };
-
-  useEffect(() => {
-    localStorage.setItem('orderHistory', JSON.stringify(orders));
-  }, [orders]);
 
   const addOrder = async (orderData) => {
     // Generate a secure UUID in client if DB doesn't automatically default it
@@ -190,7 +135,6 @@ export function OrdersProvider({ children, restaurantId }) {
       addOrder,
       updateOrder,
       deleteOrder,
-      registerOrderInShift,
       bulkUpdateOrders
     }}>
       {children}

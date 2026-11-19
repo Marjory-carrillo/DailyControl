@@ -1,46 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, Download, RefreshCw, AlertTriangle, Printer } from 'lucide-react';
+import { Save, Upload, Building2, Lock, Banknote, Bike, Users, Trash2, Clock, AlertTriangle, Printer } from 'lucide-react';
 import DeliveryEmployees from './DeliveryEmployees';
-import { useConfirm } from '../../context/ToastContext';
-
-// ── Backup helpers ────────────────────────────────────────────────────────────
-const BACKUP_KEYS = [
-  'businessConfig', 'menuCategories', 'menuProducts', 'businessMeseros',
-  'orderHistory', 'openAccounts', 'cajaChica', 'currentShift', 'shiftHistory',
-  'costeo_ingredientes', 'costeo_recetas', 'dataVersion',
-];
-
-function exportBackup() {
-  const data = {};
-  BACKUP_KEYS.forEach(k => {
-    const v = localStorage.getItem(k);
-    if (v !== null) data[k] = v;
-  });
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `dailycontrol-backup-${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importBackup(file, onSuccess, onError) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      BACKUP_KEYS.forEach(k => {
-        if (data[k] !== undefined) localStorage.setItem(k, data[k]);
-      });
-      onSuccess();
-    } catch {
-      onError();
-    }
-  };
-  reader.readAsText(file);
-}
 
 const ALL_TABS = [
   { id: 'pos',       label: 'Ventas (POS)' },
@@ -53,7 +14,6 @@ const ALL_TABS = [
 
 export default function SettingsView({ restaurantId, restaurantName, onLogout }) {
   const { config, setConfig } = useApp();
-  const showConfirm = useConfirm();
   const [form, setForm] = useState({ 
     ...config,
     protectedTabs: config.protectedTabs ?? ['dashboard', 'menu', 'settings', 'caja', 'turno'],
@@ -63,8 +23,6 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
   });
   const [saved, setSaved] = useState(false);
   const fileRef = useRef();
-  const backupImportRef = useRef();
-  const [backupMsg, setBackupMsg] = useState(null); // { type: 'success'|'error', text }
   
 
   const [newTable, setNewTable] = useState('');
@@ -405,63 +363,6 @@ export default function SettingsView({ restaurantId, restaurantName, onLogout })
             <DeliveryEmployees restaurantId={restaurantId} restaurantName={restaurantName || 'REP'} />
           </div>
         )}
-
-        {/* ── Backup & Restore ── */}
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <Download size={18} color="var(--text-light)" />
-            <span style={{ fontWeight: '700', color: 'var(--text-dark)' }}>Backup y Restauración de Datos</span>
-          </div>
-          <p style={{ fontSize: '0.83rem', color: 'var(--text-light)', margin: 0 }}>
-            ⚠️ Todos tus datos están guardados en este navegador. Exporta un respaldo regularmente para no perderlos.
-          </p>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-            {/* Export */}
-            <button
-              onClick={() => { exportBackup(); setBackupMsg({ type: 'success', text: '✅ Backup descargado correctamente.' }); setTimeout(() => setBackupMsg(null), 4000); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px', border: 'none', background: '#0984e3', color: 'white', fontFamily: 'inherit', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}
-            >
-              <Download size={16} /> Exportar Backup (.json)
-            </button>
-
-            {/* Import */}
-            <button
-              onClick={() => backupImportRef.current.click()}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '10px', border: '2px solid #0984e3', background: 'white', color: '#0984e3', fontFamily: 'inherit', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}
-            >
-              <RefreshCw size={16} /> Restaurar Backup
-            </button>
-            <input
-              ref={backupImportRef}
-              type="file"
-              accept=".json"
-              style={{ display: 'none' }}
-              onChange={async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const confirmed = await showConfirm('⚠️ Esto reemplazará TODOS tus datos actuales con los del backup. ¿Continuar?');
-                if (!confirmed) return;
-                importBackup(
-                  file,
-                  () => { setBackupMsg({ type: 'success', text: '✅ Datos restaurados. Recarga la página para ver los cambios.' }); e.target.value = ''; },
-                  () => { setBackupMsg({ type: 'error', text: '❌ El archivo no es válido o está dañado.' }); e.target.value = ''; }
-                );
-              }}
-            />
-          </div>
-
-          {backupMsg && (
-            <div style={{
-              marginTop: '10px', padding: '10px 14px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
-              background: backupMsg.type === 'success' ? 'rgba(29,209,161,0.12)' : 'rgba(231,76,60,0.12)',
-              color: backupMsg.type === 'success' ? '#10ac84' : '#e74c3c',
-              border: `1px solid ${backupMsg.type === 'success' ? '#1dd1a1' : '#e74c3c'}`,
-            }}>
-              {backupMsg.text}
-            </div>
-          )}
-        </div>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
           <button
