@@ -3,7 +3,7 @@ import { useOrders } from '../../context/OrdersContext';
 import { MapPin, CheckCircle2, Navigation, LogOut, RefreshCw } from 'lucide-react';
 import { useToast, useConfirm } from '../../context/ToastContext';
 import { playChime } from '../../utils/playChime';
-import { deliveredUpdate } from '../../utils/orderFlow';
+import { deliveredUpdate, isPaid } from '../../utils/orderFlow';
 
 export default function DeliveryView({ onLogout }) {
   const { orders, updateOrder } = useOrders();
@@ -121,7 +121,7 @@ export default function DeliveryView({ onLogout }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  A cobrar: ${(order.total || 0).toFixed(2)}
+                  {isPaid(order) ? '💵 Pagado — no cobrar' : `A cobrar: $${(parseFloat(order.total) || 0).toFixed(2)}`}
                 </span>
                 
                 <div style={{ display: 'flex', gap: '8px' }}>

@@ -110,6 +110,13 @@ describe('kitchenAutoPrintItems (impresión automática en el dispositivo de coc
   });
 });
 
+describe('amountDue (cuenta ya pagada que se vuelve a cobrar)', () => {
+  it('cuenta sin pagar: se cobra todo', () => expect(f.amountDue(60, { total: 40 })).toBe(60));
+  it('cuenta pagada con un refresco extra: solo la diferencia', () => expect(f.amountDue(60, { total: 40, paidAt: 'x' })).toBe(20));
+  it('cuenta pagada sin cambios: nada', () => expect(f.amountDue(40, { total: 40, paidAt: 'x' })).toBe(0));
+  it('pedido nuevo: se cobra todo', () => expect(f.amountDue(25, null)).toBe(25));
+});
+
 describe('clampDiscount', () => {
   it('no pasa del subtotal ni baja de 0', () => {
     expect(f.clampDiscount(500, 120)).toBe(120); expect(f.clampDiscount(-5, 120)).toBe(0); expect(f.clampDiscount('abc', 120)).toBe(0);

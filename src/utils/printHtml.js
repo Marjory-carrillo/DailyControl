@@ -27,8 +27,11 @@ function printOne(html) {
     };
     window.addEventListener('afterprint', finish);
     setTimeout(() => {
-      window.print();
-      setTimeout(finish, 1500); // por si el navegador no dispara afterprint
+      try {
+        window.print();
+      } finally {
+        setTimeout(finish, 1500); // por si el navegador no dispara afterprint (o print falla)
+      }
     }, 100);
   });
 }

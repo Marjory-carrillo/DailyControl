@@ -117,15 +117,18 @@ export function OrdersProvider({ children, restaurantId }) {
   };
 
   const deleteOrder = async (id) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .delete()
-      .eq('id', id);
-      
+      .eq('id', id)
+      .select('id');
+
     if (error) {
       console.error('Error deleting order:', error);
       throw error;
     }
+    // RLS no da error cuando no permite borrar: simplemente borra 0 filas.
+    if (!data?.length) throw new Error('No se pudo borrar el pedido.');
   };
 
   return (

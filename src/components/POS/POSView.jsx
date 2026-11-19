@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MenuGrid from './MenuGrid';
 import CartSidebar from './CartSidebar';
 import { useApp } from '../../context/AppContext';
@@ -15,7 +15,7 @@ import ActiveDeliveriesModal from './ActiveDeliveriesModal';
 export default function POSView({ employeeInfo, onOpenTab }) {
   const { categories, products, config } = useApp();
   const { addToast } = useToast();
-  const { addOrder, updateOrder } = useOrders();
+  const { addOrder, updateOrder, orders } = useOrders();
   const { shift } = useTurno();
 
   // Guard: check if a shift is open before allowing any cart action
@@ -80,11 +80,20 @@ export default function POSView({ employeeInfo, onOpenTab }) {
   };
 
   const [openAccountId, setOpenAccountId] = useState(null);
+  const busy = useRef(false); // evita que un doble toque guarde o cobre dos veces
 
   const handleCheckout = async (note, discountAmount, total, paymentMethod, deliveryInfo, meseroName, tableNumber, actionType = 'checkout') => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || busy.current) return;
     if (!shift) {
       addToast('No hay turno abierto.', 'error');
+      return;
+    }
+
+    // Estado actual del pedido (otro dispositivo pudo cambiarlo desde que se cargó).
+    const current = openAccountId ? (orders.find(o => o.id === openAccountId) ?? loadedAccount) : loadedAccount;
+    if (current?.status === 'paid' || current?.status === 'entregado') {
+      addToast('Esta cuenta ya se cerró en otro dispositivo.', 'error');
+      setCart([]); setOpenAccountId(null); setLoadedAccount(null);
       return;
     }
 
@@ -96,7 +105,7 @@ export default function POSView({ employeeInfo, onOpenTab }) {
     const plan = planPosAction(actionType, {
       isDelivery: !!deliveryInfo,
       table: tableNumber || null,
-      currentStatus: loadedAccount?.status,
+      currentStatus: current?.status,
       hasPending: pending.length > 0,
     });
     if (plan.error) {
@@ -104,6 +113,7 @@ export default function POSView({ employeeInfo, onOpenTab }) {
       return;
     }
 
+    busy.current = true;
     try {
       const now = new Date();
       const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -123,15 +133,21 @@ export default function POSView({ employeeInfo, onOpenTab }) {
         date: isoDate,
         timestamp: Date.now(),
         status: plan.status,
-        ...(plan.markPaid ? { paidAt: loadedAccount?.paidAt ?? now.toISOString() } : {}),
+        ...(plan.markPaid ? { paidAt: current?.paidAt ?? now.toISOString() } : {}),
       };
 
       const res = openAccountId ? await updateOrder(openAccountId, orderData) : await addOrder(orderData);
       const finalOrder = res?.[0] ?? orderData;
 
       // La cola de impresión garantiza comanda y luego ticket, sin pisarse.
-      if (plan.printKitchen) printKitchenNote({ ...finalOrder, items: pending });
-      if (plan.printTicket) printTicket(finalOrder, config);
+      // El pedido ya se guardó: un error al imprimir no debe dejar el carrito listo para cobrarlo otra vez.
+      try {
+        if (plan.printKitchen) printKitchenNote({ ...finalOrder, items: pending });
+        if (plan.printTicket) printTicket(finalOrder, config);
+      } catch (printErr) {
+        console.error(printErr);
+        addToast('Se guardó, pero falló la impresión.', 'error');
+      }
 
       addToast(
         actionType === 'save' ? 'Cuenta guardada ✓'
@@ -148,6 +164,8 @@ export default function POSView({ employeeInfo, onOpenTab }) {
     } catch (err) {
       console.error(err);
       addToast(`Error al procesar: ${err.message}`, 'error');
+    } finally {
+      busy.current = false;
     }
   };
 

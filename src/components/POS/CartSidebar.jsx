@@ -4,7 +4,7 @@ import { Trash2, Plus, Minus, Printer, Tag, Bike, MapPin, Phone, UserCircle2, X,
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { useOrders } from '../../context/OrdersContext';
-import { clampDiscount } from '../../utils/orderFlow';
+import { clampDiscount, isPaid, amountDue } from '../../utils/orderFlow';
 
 export default function CartSidebar({ cart, updateQuantity, removeFromCart, updateItemNote, onCheckout, loadedAccount, onCloseAccount, fullHeight, activePersona, onSetActivePersona, employeeInfo }) {
   const { config } = useApp();
@@ -401,6 +401,12 @@ export default function CartSidebar({ cart, updateQuantity, removeFromCart, upda
             <span>Total:</span>
             <span style={{ color: 'var(--primary-color)' }}>${total.toFixed(2)}</span>
           </div>
+          {isPaid(loadedAccount) && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 'bold', background: 'rgba(39,174,96,0.1)', color: '#27ae60', padding: '6px 10px', borderRadius: '8px' }}>
+              <span>Ya pagado ${(parseFloat(loadedAccount.total) || 0).toFixed(2)}</span>
+              <span>Por cobrar ${amountDue(total, loadedAccount).toFixed(2)}</span>
+            </div>
+          )}
 
           {/* Action buttons */}
           {!isDelivery ? (

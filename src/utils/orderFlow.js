@@ -26,7 +26,11 @@ export function kitchenAutoPrintItems(oldOrder, newOrder) {
 
 export const markItemsSent =(items = []) => items.map(i => ({ ...i, sentQty: i.quantity }));
 
-export const clampDiscount = (discount, subtotal) => {
+// Lo que falta cobrar: si la cuenta ya se pagó, solo lo que se agregó después.
+export const amountDue = (total, account) =>
+  isPaid(account) ? Math.max(0, total - (parseFloat(account.total) || 0)) : total;
+
+export const clampDiscount =(discount, subtotal) => {
   const d = parseFloat(discount);
   if (!(d > 0)) return 0;
   return Math.min(d, subtotal);
