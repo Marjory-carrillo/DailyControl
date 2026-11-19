@@ -5,6 +5,7 @@ import { useOrders } from '../../context/OrdersContext';
 import { useTurno } from '../../context/TurnoContext';
 import { printTicket } from '../../utils/printTicket';
 import { esc } from '../../utils/escapeHtml';
+import { isPaid, paidMs } from '../../utils/orderFlow';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -128,13 +129,13 @@ function printReport(stats, orders, cajaMovements, dateLabel, config) {
 
   // Grouping logic
   const allDates = [...new Set([
-    ...orders.map(o => o.date ? getStandardDateStr(o.date, o.timestamp) : 'Sin fecha'),
+    ...orders.map(o => getStandardDateStr('', paidMs(o))),
     ...cajaMovements.map(m => m.date ? getStandardDateStr(m.date, m.timestamp) : 'Sin fecha')
   ])].sort((a,b) => parseDate(a) - parseDate(b));
 
   const ordersByDate = {};
   orders.forEach(o => {
-    const stdDate = o.date ? getStandardDateStr(o.date, o.timestamp) : 'Sin fecha';
+    const stdDate = getStandardDateStr('', paidMs(o));
     (ordersByDate[stdDate] = ordersByDate[stdDate] || []).push(o);
   });
 
@@ -311,8 +312,9 @@ export default function DashboardView() {
   // ── filter orders by date range + optional filters
   const filteredOrders = useMemo(() => {
     return allOrders.filter(o => {
-      const isPaidOrDelivered = o.status === 'paid' || o.status === 'entregado';
-      const inRange = isDateInRange(o.date || '', dateRange.start, dateRange.end, o.timestamp);
+      // Venta = pedido cobrado; su día es el del cobro.
+      const isPaidOrDelivered = isPaid(o);
+      const inRange = isPaidOrDelivered && isDateInRange('', dateRange.start, dateRange.end, paidMs(o));
       const matchMesero = filterMesero === 'Todos' || o.mesero === filterMesero;
       const matchMethod = filterMethod === 'Todos' || (o.paymentMethod || 'Efectivo') === filterMethod;
       return isPaidOrDelivered && inRange && matchMesero && matchMethod;
@@ -465,9 +467,9 @@ export default function DashboardView() {
         // Group all orders (not just filtered) by date within range
         const salesByDate = {};
         allOrders.forEach(o => {
-          if (o.date) {
-            const stdDate = getStandardDateStr(o.date, o.timestamp);
-            if (isDateInRange(o.date, dateRange.start, dateRange.end, o.timestamp)) {
+          if (isPaid(o)) {
+            const stdDate = getStandardDateStr('', paidMs(o));
+            if (isDateInRange('', dateRange.start, dateRange.end, paidMs(o))) {
               salesByDate[stdDate] = (salesByDate[stdDate] || 0) + (parseFloat(o.total) || 0);
             }
           }

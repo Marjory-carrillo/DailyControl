@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
+import { isPaid, paidMs } from '../../utils/orderFlow';
 import { useCosteo } from '../../context/CosteoContext';
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
@@ -886,10 +887,7 @@ function RendimientoTab() {
       startTime = now.getTime() - 30 * 24 * 60 * 60 * 1000;
     }
 
-    return orders.filter(o => 
-      o.timestamp >= startTime && 
-      (o.status === 'paid' || o.status === 'entregado')
-    );
+    return orders.filter(o => isPaid(o) && paidMs(o) >= startTime);
   }, [orders, range]);
 
   // 2. Count products sold in filtered orders
