@@ -14,7 +14,17 @@ export const pendingKitchenItems = (items = []) =>
     .map(i => ({ ...i, quantity: i.quantity - (i.sentQty ?? 0) }))
     .filter(i => i.quantity > 0);
 
-export const markItemsSent = (items = []) => items.map(i => ({ ...i, sentQty: i.quantity }));
+// Para la impresión automática en el dispositivo de cocina: lo que se acaba de mandar,
+// comparando sentQty antes y después del cambio (oldOrder es null en un pedido nuevo).
+export function kitchenAutoPrintItems(oldOrder, newOrder) {
+  const key = (i) => i.cartItemId ?? i.id;
+  const before = new Map((oldOrder?.items || []).map(i => [key(i), i.sentQty ?? 0]));
+  return (newOrder?.items || [])
+    .map(i => ({ ...i, quantity: (i.sentQty ?? 0) - (before.get(key(i)) ?? 0) }))
+    .filter(i => i.quantity > 0);
+}
+
+export const markItemsSent =(items = []) => items.map(i => ({ ...i, sentQty: i.quantity }));
 
 export const clampDiscount = (discount, subtotal) => {
   const d = parseFloat(discount);

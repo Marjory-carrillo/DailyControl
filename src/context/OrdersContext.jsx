@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { printKitchenNote } from '../utils/printKitchenNote';
+import { kitchenAutoPrintItems } from '../utils/orderFlow';
 
 const OrdersContext = createContext();
 
 export function OrdersProvider({ children, restaurantId }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Pedidos que este dispositivo acaba de escribir: ya imprimió su comanda, no la reimprime al llegar el evento.
+  const localWrites = useRef(new Set());
   useEffect(() => {
     if (!restaurantId) return;
     fetchOrders();
@@ -44,31 +47,26 @@ export function OrdersProvider({ children, restaurantId }) {
   };
 
   const handleRealtimeEvent = (payload) => {
-    if (payload.eventType === 'INSERT') {
-      setOrders(prev => [payload.new, ...prev]);
-      
-      // Auto-print kitchen note if enabled on this device and status is 'en_preparacion'
-      if (payload.new.status === 'en_preparacion') {
-        const autoPrint = localStorage.getItem('autoPrintKitchen') === 'true';
-        if (autoPrint) {
-          try {
-            printKitchenNote(payload.new);
-          } catch (e) {
-            console.error('Error auto-printing kitchen note:', e);
-          }
-        }
-      }
-    } else if (payload.eventType === 'UPDATE') {
-      setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new : o));
-    } else if (payload.eventType === 'DELETE') {
+    if (payload.eventType === 'DELETE') {
       setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+      return;
     }
+    const row = payload.new;
+    if (payload.eventType === 'INSERT') setOrders(prev => [row, ...prev]);
+    else setOrders(prev => prev.map(o => o.id === row.id ? row : o));
+
+    if (localWrites.current.delete(row.id)) return;
+    // Impresión automática (dispositivo de cocina): solo lo que se acaba de mandar a cocina.
+    if (localStorage.getItem('autoPrintKitchen') !== 'true') return;
+    const items = kitchenAutoPrintItems(payload.eventType === 'INSERT' ? null : payload.old, row);
+    if (items.length > 0) printKitchenNote({ ...row, items });
   };
 
   const addOrder = async (orderData) => {
     // Generate a secure UUID in client if DB doesn't automatically default it
     const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).substring(2, 9));
     const { id: _localId, ...rest } = orderData;
+    localWrites.current.add(generatedId);
     const orderWithTenant = {
       ...rest,
       id: generatedId,
@@ -89,6 +87,7 @@ export function OrdersProvider({ children, restaurantId }) {
   };
 
   const updateOrder = async (id, updates) => {
+    localWrites.current.add(id);
     const { data, error } = await supabase
       .from('orders')
       .update(updates)
@@ -103,6 +102,7 @@ export function OrdersProvider({ children, restaurantId }) {
   };
 
   const bulkUpdateOrders = async (ids, updates) => {
+    ids.forEach(id => localWrites.current.add(id));
     const { data, error } = await supabase
       .from('orders')
       .update(updates)

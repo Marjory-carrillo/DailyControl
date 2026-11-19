@@ -90,6 +90,26 @@ describe('cocina y entrega', () => {
   });
 });
 
+describe('kitchenAutoPrintItems (impresión automática en el dispositivo de cocina)', () => {
+  it('pedido nuevo en cocina imprime lo enviado', () => {
+    const nuevo = { status: 'en_preparacion', items: [{ cartItemId: 'a', quantity: 2, sentQty: 2 }] };
+    expect(f.kitchenAutoPrintItems(null, nuevo).map(i => i.quantity)).toEqual([2]);
+  });
+  it('mesa que agrega productos imprime solo la diferencia', () => {
+    const antes = { status: 'open', items: [{ cartItemId: 'a', quantity: 2, sentQty: 2 }] };
+    const despues = { status: 'en_preparacion', items: [{ cartItemId: 'a', quantity: 3, sentQty: 3 }, { cartItemId: 'b', quantity: 1, sentQty: 1 }] };
+    expect(f.kitchenAutoPrintItems(antes, despues).map(i => [i.cartItemId, i.quantity])).toEqual([['a', 1], ['b', 1]]);
+  });
+  it('cambio sin envío nuevo (cobrar, marcar listo) no imprime', () => {
+    const items = [{ cartItemId: 'a', quantity: 2, sentQty: 2 }];
+    expect(f.kitchenAutoPrintItems({ status: 'en_preparacion', items }, { status: 'en_preparacion', items, paidAt: 'x' })).toEqual([]);
+    expect(f.kitchenAutoPrintItems({ status: 'en_preparacion', items }, { status: 'paid', items })).toEqual([]);
+  });
+  it('pedido guardado sin mandar a cocina no imprime', () => {
+    expect(f.kitchenAutoPrintItems(null, { status: 'open', items: [{ cartItemId: 'a', quantity: 1 }] })).toEqual([]);
+  });
+});
+
 describe('clampDiscount', () => {
   it('no pasa del subtotal ni baja de 0', () => {
     expect(f.clampDiscount(500, 120)).toBe(120); expect(f.clampDiscount(-5, 120)).toBe(0); expect(f.clampDiscount('abc', 120)).toBe(0);
