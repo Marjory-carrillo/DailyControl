@@ -1,15 +1,10 @@
+import { esc } from './escapeHtml';
+import { printHtml } from './printHtml';
+
 /**
  * Imprime la comanda para la cocina (nota del taquero).
  * Sin precios, solo artículos, cantidad, notas y destino.
  */
-function safeExtract(htmlStr, startTag, endTag) {
-  const startIdx = htmlStr.indexOf(startTag);
-  if (startIdx === -1) return '';
-  const endIdx = htmlStr.indexOf(endTag, startIdx + startTag.length);
-  if (endIdx === -1) return htmlStr.substring(startIdx + startTag.length);
-  return htmlStr.substring(startIdx + startTag.length, endIdx);
-}
-
 export function printKitchenNote(order) {
   const renderItems = () => {
     const byPersona = {};
@@ -24,7 +19,7 @@ export function printKitchenNote(order) {
 
     personas.forEach((p, idx) => {
       if (personas.length > 1) {
-        html += `<div style="font-size:20px; font-weight:900; background:#000; color:#fff; padding:4px; margin: 8px 0; text-align:center;">--- ${p.toUpperCase()} ---</div>`;
+        html += `<div style="font-size:20px; font-weight:900; background:#000; color:#fff; padding:4px; margin: 8px 0; text-align:center;">--- ${esc(p.toUpperCase())} ---</div>`;
       }
       
       byPersona[p].forEach(i => {
@@ -32,9 +27,9 @@ export function printKitchenNote(order) {
           <div class="item">
             <div style="display: flex; gap: 8px; align-items: baseline;">
               <span class="qty">${i.quantity}x</span>
-              <span class="name">${i.name}</span>
+              <span class="name">${esc(i.name)}</span>
             </div>
-            ${i.itemNote ? `<div style="margin-left: 40px; font-size: 16px; font-weight: bold; padding: 2px 4px; border: 1px solid #000; display: inline-block; margin-top: 4px;">📝 ${i.itemNote}</div>` : ''}
+            ${i.itemNote ? `<div style="margin-left: 40px; font-size: 16px; font-weight: bold; padding: 2px 4px; border: 1px solid #000; display: inline-block; margin-top: 4px;">📝 ${esc(i.itemNote)}</div>` : ''}
           </div>
         `;
       });
@@ -54,7 +49,7 @@ export function printKitchenNote(order) {
       `;
     }
     if (order.table) {
-      return `<div class="badge">🪑 ${order.table}</div>`;
+      return `<div class="badge">🪑 ${esc(order.table)}</div>`;
     }
     return `<div class="badge">🏠 MOSTRADOR</div>`;
   };
@@ -63,7 +58,7 @@ export function printKitchenNote(order) {
     order.note
       ? `<div class="nota">
            <div style="text-align:center; font-size:18px; margin-bottom:4px;">⚠ NOTA GENERAL DE LA ORDEN ⚠</div>
-           <div style="text-align:center;">${order.note}</div>
+           <div style="text-align:center;">${esc(order.note)}</div>
          </div>`
       : '';
 
@@ -84,8 +79,8 @@ export function printKitchenNote(order) {
         .nota { margin-top: 10px; padding: 8px; border: 3px dashed #000; font-size: 16px; background: #fffde7; font-weight: bold; }
       </style>
       <div class="header">
-        <h1>COMANDA #${order.order_number || order.id}</h1>
-        <div class="time">${order.time || new Date().toLocaleTimeString()}</div>
+        <h1>COMANDA #${esc(order.order_number || order.id)}</h1>
+        <div class="time">${esc(order.time || new Date().toLocaleTimeString())}</div>
       </div>
       ${renderDestino()}
       <div style="margin-top:10px;">
@@ -100,27 +95,5 @@ export function printKitchenNote(order) {
     </div>
   `;
 
-  try {
-    const printContainer = document.getElementById('print-container');
-    if (printContainer) {
-      printContainer.innerHTML = html;
-      setTimeout(() => {
-        window.print();
-      }, 100);
-    } else {
-      console.error("El contenedor de impresión (#print-container) no existe en el DOM.");
-      // Fallback a window.open si no existe el contenedor
-      const printWindow = window.open('', '_blank', 'width=220,height=600');
-      if (printWindow) {
-        printWindow.document.write(`<html><body>${html}</body></html>`);
-        printWindow.document.close();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 100);
-      }
-    }
-  } catch (err) {
-    console.error('Failed to trigger print:', err);
-  }
+  return printHtml(html);
 }

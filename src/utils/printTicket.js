@@ -1,3 +1,6 @@
+import { esc } from './escapeHtml';
+import { printHtml } from './printHtml';
+
 export function printTicket(order, config = {}) {
   const businessName = config?.businessName || 'Mi Negocio';
   const slogan = config?.slogan || '';
@@ -23,7 +26,7 @@ export function printTicket(order, config = {}) {
     
     personas.forEach((p, idx) => {
       if (personas.length > 1) {
-        html += `<div style="font-size:15px; font-weight:900; background:#eee; padding:4px; margin: 6px 0; text-align:center; border: 1px solid #000;">${p.toUpperCase()}</div>`;
+        html += `<div style="font-size:15px; font-weight:900; background:#eee; padding:4px; margin: 6px 0; text-align:center; border: 1px solid #000;">${esc(p.toUpperCase())}</div>`;
       }
       
       byPersona[p].forEach(i => {
@@ -31,13 +34,13 @@ export function printTicket(order, config = {}) {
           <div style="display:flex; flex-direction:column; margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #aaa; line-height:1.2;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <div style="flex:1; padding-right:8px; word-break:break-word;">
-                ${i.quantity}x ${i.name}
+                ${i.quantity}x ${esc(i.name)}
               </div>
               <div style="white-space:nowrap;">
                 $${(i.price * i.quantity).toFixed(2)}
               </div>
             </div>
-            ${i.itemNote ? `<div style="font-size:13px; color:#000; font-weight:bold; margin-left:20px; margin-top:2px;">↳ Nota: ${i.itemNote}</div>` : ''}
+            ${i.itemNote ? `<div style="font-size:13px; color:#000; font-weight:bold; margin-left:20px; margin-top:2px;">↳ Nota: ${esc(i.itemNote)}</div>` : ''}
           </div>
         `;
       });
@@ -66,7 +69,7 @@ export function printTicket(order, config = {}) {
       <strong style="display:block; margin-bottom:6px; font-size:12px;">DESGLOSE POR PERSONA:</strong>`;
     keys.forEach(k => {
       html += `<div class="row" style="font-size:12px; margin-left:8px;">
-        <span>${k}</span><span>$${personas[k].total.toFixed(2)}</span>
+        <span>${esc(k)}</span><span>$${personas[k].total.toFixed(2)}</span>
       </div>`;
     });
     html += '</div>';
@@ -100,7 +103,7 @@ export function printTicket(order, config = {}) {
     html += `
       <div class="total" style="margin-top:8px;">TOTAL: $${order.total.toFixed(2)}</div>
       <div class="row" style="font-size:11px; color:#666; justify-content:flex-end;">
-        <span>Pago: ${order.paymentMethod || 'Efectivo'}</span>
+        <span>Pago: ${esc(order.paymentMethod || 'Efectivo')}</span>
       </div>
     `;
     
@@ -109,7 +112,7 @@ export function printTicket(order, config = {}) {
       html += `
         <div style="margin-top:8px; background:#f0f8ff; border:1px solid #bee3f8; border-radius:6px; padding:8px 10px; font-size:12px; text-align:center;">
           <strong>📲 Cuenta para Transferencia:</strong><br/>
-          <span style="font-weight:bold;">${config.transferAccount}</span>
+          <span style="font-weight:bold;">${esc(config.transferAccount)}</span>
         </div>
       `;
     }
@@ -120,7 +123,7 @@ export function printTicket(order, config = {}) {
   const renderNote = () => order.note ? `
     <div style="margin-top:12px; padding:10px; border:2px dashed #000; background:#f9f9f9;">
       <strong style="display:block; margin-bottom:4px; font-size:14px; text-align:center;">⚠ NOTA GENERAL DE LA ORDEN ⚠</strong>
-      <div style="font-size:14px; text-align:center;">${order.note}</div>
+      <div style="font-size:14px; text-align:center;">${esc(order.note)}</div>
     </div>
   ` : '';
 
@@ -132,10 +135,10 @@ export function printTicket(order, config = {}) {
     return `
     <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #000; font-size:12px;">
       <strong style="display:block; margin-bottom:4px; font-size:14px;">🛵 ENTREGA A DOMICILIO</strong>
-      ${clientName ? `<strong>Cliente:</strong> ${clientName}<br/>` : ''}
-      <strong>Colonia:</strong> ${colonia}<br/>
-      <strong>Calle:</strong> ${addressLine}
-      ${phone ? `<br/><strong>Tel:</strong> ${phone}` : ''}
+      ${clientName ? `<strong>Cliente:</strong> ${esc(clientName)}<br/>` : ''}
+      <strong>Colonia:</strong> ${esc(colonia)}<br/>
+      <strong>Calle:</strong> ${esc(addressLine)}
+      ${phone ? `<br/><strong>Tel:</strong> ${esc(phone)}` : ''}
     </div>
   `;
   };
@@ -144,7 +147,7 @@ export function printTicket(order, config = {}) {
     if (order.table && !order.delivery) {
       return `
       <div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px dashed #000; font-size:14px; text-align:center;">
-        <strong>🪑 ${order.table}</strong>
+        <strong>🪑 ${esc(order.table)}</strong>
       </div>
       `;
     }
@@ -153,17 +156,17 @@ export function printTicket(order, config = {}) {
 
   const renderMesero = () => order.mesero ? `
     <div style="text-align:center; font-size:11px; margin-top:2px; margin-bottom:6px;">
-      <strong>Atiende:</strong> ${order.mesero}
+      <strong>Atiende:</strong> ${esc(order.mesero)}
     </div>
   ` : '';
 
   const clienteCopy = `
     <div class="ticket">
       <div class="header">
-        <strong>${businessName.toUpperCase()}</strong>
-        ${slogan ? `<br/><span>${slogan}</span>` : ''}
-        ${phone ? `<br/><span>Tel: ${phone}</span>` : ''}
-        <br/><span style="margin-top:6px; display:inline-block;">Orden #${displayId} — ${order.time}</span>
+        <strong>${esc(businessName.toUpperCase())}</strong>
+        ${slogan ? `<br/><span>${esc(slogan)}</span>` : ''}
+        ${phone ? `<br/><span>Tel: ${esc(phone)}</span>` : ''}
+        <br/><span style="margin-top:6px; display:inline-block;">Orden #${esc(displayId)} — ${esc(order.time)}</span>
       </div>
       ${renderDelivery()}
       ${renderTable()}
@@ -201,27 +204,5 @@ export function printTicket(order, config = {}) {
     </div>
   `;
 
-  try {
-    const printContainer = document.getElementById('print-container');
-    if (printContainer) {
-      printContainer.innerHTML = ticketHTML;
-      setTimeout(() => {
-        window.print();
-      }, 100);
-    } else {
-      console.error("El contenedor de impresión (#print-container) no existe en el DOM.");
-      // Fallback a window.open si no existe el contenedor
-      const printWindow = window.open('', '_blank', 'width=220,height=800');
-      if (printWindow) {
-        printWindow.document.write(`<html><body>${ticketHTML}</body></html>`);
-        printWindow.document.close();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 100);
-      }
-    }
-  } catch (err) {
-    console.error('Failed to trigger print:', err);
-  }
+  return printHtml(ticketHTML);
 }
