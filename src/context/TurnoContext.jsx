@@ -1,33 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useOrders } from './OrdersContext';
+import { calcShiftStats } from '../utils/orderFlow';
 
 const TurnoContext = createContext();
 
 const todayIso = (now = new Date()) =>
   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-// Totales del turno, calculados siempre desde los pedidos (una sola fuente de verdad).
-export function calcShiftStats(orders, shift) {
-  const stats = { count: 0, efectivo: 0, transferencia: 0, envios: 0, enviosEfectivo: 0 };
-  if (!shift) return stats;
-  const openTime = new Date(shift.openedAt).getTime();
-  orders.forEach(o => {
-    if (!(Number(o.timestamp) >= openTime && (o.status === 'paid' || o.status === 'entregado'))) return;
-    const deliveryFee = parseFloat(o.delivery?.deliveryFee || 0);
-    const foodTotal = parseFloat(o.total || 0) - deliveryFee;
-    const method = (o.paymentMethod || 'Efectivo').toLowerCase();
-    stats.count += 1;
-    stats.envios += deliveryFee;
-    if (method === 'efectivo') {
-      stats.efectivo += foodTotal;
-      stats.enviosEfectivo += deliveryFee;
-    } else {
-      stats.transferencia += foodTotal; // Transferencia (y cualquier otro método no-efectivo)
-    }
-  });
-  return stats;
-}
 
 // Turno abierto, historial de turnos y caja chica del restaurante, compartidos entre dispositivos.
 export function TurnoProvider({ children, restaurantId }) {
