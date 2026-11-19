@@ -2,12 +2,14 @@ import React from 'react';
 import { X, Clock, User, ClipboardList, PlusCircle, Trash2 } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
 import { useApp } from '../../context/AppContext';
-import { useConfirm } from '../../context/ToastContext';
+import { useConfirm, useToast } from '../../context/ToastContext';
+import { isTableOccupied } from '../../utils/orderFlow';
 
 export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder }) {
   const { orders, deleteOrder } = useOrders();
   const { config } = useApp();
   const showConfirm = useConfirm();
+  const { addToast } = useToast();
 
   const handleDeleteOrder = async (e, id) => {
     e.stopPropagation(); // Evitar que abra la cuenta al dar clic al botón de borrar
@@ -17,11 +19,12 @@ export default function TableMapModal({ onClose, onLoadAccount, onStartNewOrder 
       await deleteOrder(id);
     } catch (err) {
       console.error('Error al eliminar orden:', err);
+      addToast('No se pudo borrar. Solo el dueño puede borrar pedidos que ya están en cocina.', 'error');
     }
   };
 
-  // Active open orders
-  const openOrders = orders.filter(o => o.status === 'open');
+  // Mesas con cuenta sin cerrar (abierta, en cocina o lista)
+  const openOrders = orders.filter(isTableOccupied);
 
   // Find if a table has an active order
   const getTableOrder = (tableName) => {

@@ -1,15 +1,17 @@
 import React from 'react';
 import { X, Clock, Bike, ShoppingBag, Edit2, Trash2 } from 'lucide-react';
 import { useOrders } from '../../context/OrdersContext';
-import { useConfirm } from '../../context/ToastContext';
+import { useConfirm, useToast } from '../../context/ToastContext';
+import { isPaid } from '../../utils/orderFlow';
 
 export default function ActiveDeliveriesModal({ onClose, onLoadAccount }) {
   const { orders, deleteOrder } = useOrders();
   const showConfirm = useConfirm();
+  const { addToast } = useToast();
 
   // Filter orders that are preparing or ready and are delivery or carryout (no table)
   const activeOrders = orders.filter(o => 
-    (o.status === 'en_preparacion' || o.status === 'listo') && 
+    (o.status === 'en_preparacion' || o.status === 'listo' || o.status === 'en_camino') && 
     (o.delivery || !o.table)
   );
 
@@ -21,6 +23,7 @@ export default function ActiveDeliveriesModal({ onClose, onLoadAccount }) {
       await deleteOrder(id);
     } catch (err) {
       console.error('Error al eliminar orden activa:', err);
+      addToast('No se pudo borrar. Solo el dueño puede borrar pedidos que ya están en cocina.', 'error');
     }
   };
 
@@ -92,7 +95,7 @@ export default function ActiveDeliveriesModal({ onClose, onLoadAccount }) {
           ) : (
             activeOrders.map(order => {
               const isDelivery = !!order.delivery;
-              const statusLabel = order.status === 'en_preparacion' ? '🍳 En Cocina' : '✓ Listo';
+              const statusLabel = order.status === 'en_preparacion' ? '🍳 En Cocina' : order.status === 'en_camino' ? '🛵 En camino' : '✓ Listo';
               const statusColor = order.status === 'en_preparacion' ? '#e67e22' : '#27ae60';
               const statusBg = order.status === 'en_preparacion' ? 'rgba(230, 126, 34, 0.1)' : 'rgba(39, 174, 96, 0.1)';
 
@@ -127,6 +130,9 @@ export default function ActiveDeliveriesModal({ onClose, onLoadAccount }) {
                         textTransform: 'uppercase'
                       }}>
                         {statusLabel}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '2px 8px', borderRadius: '12px', background: isPaid(order) ? 'rgba(39,174,96,0.1)' : 'rgba(231,76,60,0.1)', color: isPaid(order) ? '#27ae60' : '#e74c3c' }}>
+                        {isPaid(order) ? '💵 Pagado' : 'Por cobrar'}
                       </span>
                     </div>
 
